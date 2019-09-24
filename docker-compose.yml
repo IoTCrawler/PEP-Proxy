@@ -1,0 +1,13 @@
+version: '3.1'
+
+services:
+  pepproxy:
+    image: iotcrawler/pep-proxy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+        - "1027:1027"
+    restart: unless-stopped

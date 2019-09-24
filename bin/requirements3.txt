@@ -1,0 +1,6 @@
+attrs==19.1.0
+hypothesis==4.32.3
+powerline-status==2.7
+pycrypto==2.6.1
+pyparsing==2.4.2
+virtualenv==16.7.2

@@ -21,6 +21,8 @@ cfg = configparser.ConfigParser()
 cfg.read(["./config.cfg"])  
 pep_host = cfg.get("GENERAL", "pep_host")
 pep_port = int(cfg.get("GENERAL", "pep_port"))
+target_host = cfg.get("GENERAL", "target_host")
+target_port = int(cfg.get("GENERAL", "target_port"))
 
 APIVersion = cfg.get("GENERAL", "APIVersion")
 
@@ -45,18 +47,6 @@ for m in range(len(allSeparatorPathAttributeEncriptation)):
 
 rPAE=json.loads(cfg.get("GENERAL", "relativePathAttributeEncriptation"))
 noEncryptedKeys = json.loads(cfg.get("GENERAL", "noEncryptedKeys"))
-
-#PDTE_JUAN: Quit and pass target_host, target_port to config.cfg.
-target_host = ""
-target_port = 0
-
-if (APIVersion.upper() == "NGSIv1".upper() or APIVersion.upper() == "NGSIv2".upper()):
-    #target_host = "155.54.95.242"
-    target_host = "155.54.99.118"
-    target_port = 1026
-else:
-    target_host = "155.54.95.248"
-    target_port = 9090
 
 def CBConnection(method, uri,headers,body = None):
 
@@ -91,18 +81,25 @@ def CBConnection(method, uri,headers,body = None):
 
             if (state):
 
-                logging.info("BROKER REQUEST:\n" + 
-                "\t\tMethod: " + method + "\n" + 
-                "\t\tURI: " + uri + "\n" + 
-                "\t\tHeaders: " + str(headers) + "\n" + 
-                "\t\tBody: " + str(body))
-
                 if(target_protocol.upper() == "http".upper()):
                     conn = http.client.HTTPConnection(target_host, target_port)
                 else:                    
                     gcontext = ssl.SSLContext()
                     conn = http.client.HTTPSConnection(target_host,target_port,
                                                 context=gcontext)
+
+                #Deleting "x-auth-token" header, before NGSILD, REQUEST.
+
+                if headers.get("x-auth-token"): 
+                    headers.pop("x-auth-token")
+
+                logging.info("BROKER REQUEST:\n" + 
+                "\t\tHost: " + target_host + "\n" + 
+                "\t\tPort: " + str(target_port) + "\n" + 
+                "\t\tMethod: " + method + "\n" + 
+                "\t\tURI: " + uri + "\n" + 
+                "\t\tHeaders: " + str(headers) + "\n" + 
+                "\t\tBody: " + str(body))
 
                 conn.request(method, uri, body, headers)
 
@@ -190,7 +187,7 @@ def validationToken(headers,method,uri,body = None):
 
         for key in headers:
 
-            if(key=="x-auth-token"):
+            if(key.upper()=="x-auth-token".upper()):
 
                 headersStr = json.dumps(headers)
 
@@ -206,6 +203,12 @@ def validationToken(headers,method,uri,body = None):
                 #print(type(bodyStr))
                 #print(type(str(headers[key])))
 
+                #print(str(method))
+                #print(str(uri))
+                #print(headersStr)
+                #print(bodyStr)
+                #print(str(headers[key]))
+
                 #Validating token
                 codeType, outType = getstatusoutput(["java","-jar","CapabilityEvaluator.jar",
                 str(method),
@@ -214,6 +217,7 @@ def validationToken(headers,method,uri,body = None):
                 bodyStr,
                 str(headers[key])])
 
+                #print("codeType: " + str(codeType))
                 #print("outType: " + str(outType))
 
                 outTypeProcessed = outType.decode('utf8').replace("'", '"').replace("CODE: ","").replace("\n", "")
@@ -221,7 +225,7 @@ def validationToken(headers,method,uri,body = None):
 
                 #print("outTypeProcessed: " + outTypeProcessed)
 
-                if (outTypeProcessed=="AUTHORIZED"):
+                if (outTypeProcessed.upper()=="AUTHORIZED".upper()):
                     validation = True
 
                 break

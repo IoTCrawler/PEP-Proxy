@@ -66,7 +66,9 @@ def CBConnection(method, uri,headers,body = None):
 
             state = True
 
-            if (body != None):
+            if (body != None and str(uri).upper().startswith("/v1/subscribeContext".upper()) == False 
+                and str(uri).upper().startswith("/v2/subscriptions".upper()) == False 
+                and str(uri).upper().startswith("/ngsi-ld/v1/subscriptions".upper()) == False):
                 
                 state = False
 

@@ -86,45 +86,45 @@ def encryptProcess(APIVersion,method,uri,body,sPAE,rPAE,noEncryptedKeys):
     except:
         return bodyBackUp, False
 
-def obtainErrorResponseHeaders(APIVersion,method,message):
+def obtainErrorResponseHeaders(APIVersion,method=None,message=None):
 
     headers = dict()
     chunkedResponse = False
 
     if( APIVersion.upper() == "NGSIv1".upper()):
-        headers,chunkedResponse = API.UtilsNGSIv1.errorHeaders(method,message)
+        headers,chunkedResponse = API.UtilsNGSIv1.errorHeaders()
     else:
         if( APIVersion.upper() == "NGSIv2".upper()):
-            headers,chunkedResponse = API.UtilsNGSIv2.errorHeaders(method,message)
+            headers,chunkedResponse = API.UtilsNGSIv2.errorHeaders()
         else:     
             if ( APIVersion.upper() == "NGSILDv1".upper()):
-                headers,chunkedResponse = API.UtilsNGSILDv1.errorHeaders(method,message)
+                headers,chunkedResponse = API.UtilsNGSILDv1.errorHeaders()
 
     return  headers,chunkedResponse
 
 
-def obtainErrorResponseBody(APIVersion,method):
+def obtainErrorResponseBody(APIVersion,method,code,title,details):
 
     if( APIVersion.upper() == "NGSIv1".upper()):
-        message = API.UtilsNGSIv1.errorBody(method)
+        messageBody = API.UtilsNGSIv1.errorBody(method,code,title,details)
     else:
         if( APIVersion.upper() == "NGSIv2".upper()):
-            message = API.UtilsNGSIv2.errorBody(method)
+            messageBody = API.UtilsNGSIv2.errorBody(method,code,title,details)
         else:     
             if ( APIVersion.upper() == "NGSILDv1".upper()):
-                message = API.UtilsNGSILDv1.errorBody(method)
-    return message
+                messageBody = API.UtilsNGSILDv1.errorBody(method,code,title,details)
+    return messageBody
 
 
-def obtainErrorResponseCode(APIVersion,method):
-
-    if( APIVersion.upper() == "NGSIv1".upper()):
-        code = API.UtilsNGSIv1.errorCode(method)
-    else:
-        if( APIVersion.upper() == "NGSIv2".upper()):
-            code = API.UtilsNGSIv2.errorCode(method)
-        else:     
-            if ( APIVersion.upper() == "NGSILDv1".upper()):
-                code = API.UtilsNGSILDv1.errorCode(method)
-    
-    return code
+#def obtainErrorResponseCode(APIVersion,method):
+#
+#    if( APIVersion.upper() == "NGSIv1".upper()):
+#        code = API.UtilsNGSIv1.errorCode(method)
+#    else:
+#        if( APIVersion.upper() == "NGSIv2".upper()):
+#            code = API.UtilsNGSIv2.errorCode(method)
+#        else:     
+#            if ( APIVersion.upper() == "NGSILDv1".upper()):
+#                code = API.UtilsNGSILDv1.errorCode(method)
+#    
+#    return code

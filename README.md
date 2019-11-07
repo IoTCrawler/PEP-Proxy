@@ -20,12 +20,21 @@ This project contains:
     - cpabe_cipher.jar file: It is a Java application to cypher text with cp-abe.
     - cpabe_decipher.jar file: It is a Java application to decipher text with cp-abe.
 
+- PEP-Proxy files & folder to validate Capability Token.
+    - CapabilityEvaluator.jar: Java aplication (validate Capability Token process). 
+    - config folder: Contain the certificate paths.
+    - local_dependencies folder: To allow run the java process (CapabilityEvaluator.jar).
+
 - PEP-Proxy files to deploy.
 
-    - Dockerfile file: Contain the actions and commands to create the Docker image needed to run de PEP-Proxy component.
+    - Dockerfile file: Contain the actions and commands to create the Docker image needed to run the PEP-Proxy component.
     - requirements.txt: Contain the auxiliar python modules needed by the application. Dockerfile uses it.
     - build.sh file: To create the PEP-Proxy Docker image using Dockerfile.
     - docker-compose.yml file: To deploy PEP-Proxy container.
+
+- PEP-Proxy files to test.
+
+    - test folder: Contain a forder with python client examples to NGSILD. 
 
 # Configuration config.cfg file
 
@@ -43,9 +52,11 @@ vi config.cfg
 
 - Params to the target's endpoint.
 
-    - target_host: Context Broker host.
-    - target_port: Context Broker port.
-    - allApiHeaders: Define the admittable headers to send to target API. If a header of the request receives by PEP-Proxy is not included in this param, the final API request will not consider it. This param store all the headers of each API supported by PEP-Proxy. It's necessary to define an element for each API supported. **IMPORTANT:** It's necessary to use lower case.
+    - APIVersion: Broker API sopported. Admitted values: "NGSIv1","NGSIv2","NGSILDv1"
+    - target_protocol: Broker protocol. Admitted values: "http","https"
+    - target_host: Broker host.
+    - target_port: Broker port.
+    - allApiHeaders: Define the admitted headers to send to target API. If a header of the request receives by PEP-Proxy is not included in this param, the final API request will not consider it. This param store all the headers of each API supported by PEP-Proxy. It's necessary to define an element for each API supported. **IMPORTANT:** It's necessary to use lower case.
     - chunk_size: To read the response received after the API request. Default 1024
 
 - Params to cipher attributes.
@@ -53,35 +64,39 @@ vi config.cfg
     - allSeparatorPathAttributeEncriptation: Specify the separator used by relativePathAttributeEncriptation param to build a relative path into the attributes. This relative path is necessary to determine if an attribute requires cypher or no. Use a pattern never used by attributes or keywords. This param store a separator of each API supported by PEP-Proxy. It's necessary to define an element for each API supported.
     - relativePathAttributeEncriptation: This parameter is a tridimensional array. To understand it, we are going to use the next examples:
 
-        1. **ONLY ONE CONDITION** - In this case, the system searches into each the attribute first a key named "metadata", and after, into it, a key named "cpabe-policy". If it is successful, the attribute will cypher.
-        
-        - Example (NGSIv2): 
-        ```
-        relativePathAttributeEncriptation=[[["metadata/cpabe-policy",""]]]
-        ```
+        **ONLY ONE CONDITION**. In this case, the system searches into each the attribute first a key named "metadata", and after, into it, a key named "cpabe-policy". If it is successful, the attribute will cypher.
+
+        - Example (NGSIv2).
+
+            ```sh
+            relativePathAttributeEncriptation=[[["metadata/cpabe-policy",""]]]
+            ```
 
         **NOTE:** If the second element of the array is defined, the system also will verify if the value is the same as the relative path value. If it is also successful, the attribute will cypher.
-        
-        - Example (NGSIv1), the analog of previous NGSIv2 example: 
-        ```
-        relativePathAttributeEncriptation=[[["metadatas/name","cpabe-policy"]]]
-        ```
-        
-        2. **TWO CONDITIONS AND MORE (AND)** -  In this case, the second condition must also be satisfied. It is an "and" condition. If both conditions are successful, the attribute will cypher.
 
-        - Example (NGSIv1): 
-        ```
-        relativePathAttributeEncriptation=[[["metadatas/name","cpabe-policy"],["metadatas/type","policy"]]]
-        ```
+        - Example (NGSIv1), the analog of previous NGSIv2 example:
 
-        3. **TWO CONDITIONS AND MORE (OR)** - In this case, if one of the conditions is successful, the attribute will cypher. It is an "or" condition.
+            ```sh
+            relativePathAttributeEncriptation=[[["metadatas/name","cpabe-policy"]]]
+            ```
+            
+        **TWO CONDITIONS AND MORE (AND)**. In this case, the second condition must also be satisfied. It is an "and" condition. If both conditions are successful, the attribute will cypher.
+
+        - Example (NGSIv1).
+
+            ```sh
+            relativePathAttributeEncriptation=[[["metadatas/name","cpabe-policy"],["metadatas/type","policy"]]]
+            ```
+
+        **TWO CONDITIONS AND MORE (OR).**
+        In this case, if one of the conditions is successful, the attribute will cypher. It is an "or" condition.
 
         - Example (NGSIv1):
-        ```
-        relativePathAttributeEncriptation=[[["metadatas/name","cpabe-policy"]],
-                                  [["metadatas/name","other-policy"]]
-                                 ]
-        ```                                 
+
+            ```sh
+            relativePathAttributeEncriptation=[[["metadatas/name","cpabe-policy"]],["metadatas/name","other-policy"]]]
+            ```     
+
         **NOTE:** Mixed cases are supported.
 
         **IMPORTANT:** This param is case sensitive.
@@ -96,6 +111,15 @@ To run this project is neccessary to install the docker-compose tool.
 
 https://docs.docker.com/compose/install/
 
+Launch then next components:
+
+- Capability manager web service running. 
+
+```sh
+git clone http://odinslab.duckdns.org/security_components/Py_CapabilityManagerWebService.git)
+```
+
+- Broker target to access.
 
 # Installation / Execution.
 
@@ -117,7 +141,7 @@ docker-compose up -d
 
 # Monitoring.
 
-- To test if the connector is running:
+- To test if the PEP-Proxy container is running:
 
 ```sh
 docker ps -as
@@ -187,28 +211,30 @@ The conditions established in this param determinate if an attribute must be cyp
 
 To support it you must review:
 
-1) Edit UtilsPEP.py file and update the encryptProcess function.
-2) Edit the file into API folder corresponding with the API and update/review processBody function.
+1. Edit UtilsPEP.py file and update the encryptProcess function.
+
+2. Edit the file into API folder corresponding with the API and update/review processBody function.
 
 **IMPORTANT:** If request body hasn't the same format as (processCypher example comments), you need build new functions because you can't use processCypher functionality.
+
 
 # PEP-Proxy and CP-ABE cipher method:
 
 At the moment, NGSIv2 and NGSILD APIs support cp-abe cipher method. 
 
 Example CPABE cipher:
-```
-java -jar cpabe_cipher.jar "att1 att2 2of2" "hola"
 
+```sh
+java -jar cpabe_cipher.jar "att1 att2 2of2" "hello"
 ```
 
 We are going to see and example of each supported API to explain this:
 
 * NGSIv2.
 
-    - Defaul config.cfg configuration.
+    - Default config.cfg configuration.
         
-        ```
+        ```sh
         ...
         APIVersion=NGSIv2
         ...
@@ -218,14 +244,14 @@ We are going to see and example of each supported API to explain this:
 
 
     - Format to detect an attribute must be cyphered.
-        ```
+        ```sh
         "attrName": {
             "value": attrValue,
             "type": attrType,
             "metadata": {
             "encrypt_cpabe":{
                 "type":"policy",
-                "value":policyValue
+                "value":"policyValue"
             }
             }
         }
@@ -234,7 +260,7 @@ We are going to see and example of each supported API to explain this:
     - How cypher an attribute with an example. 
         - Before cypher process.
 
-            ```
+            ```sh
             "temperature": {
                 "type": "Float",
                 "value": 23,
@@ -247,14 +273,19 @@ We are going to see and example of each supported API to explain this:
             }
             ```
 
+        - Cypher operations. 
+
+            ```sh
+            temperature["type"]: "cyphertext"
+
+            temperature["value"]: java -jar cpabe_cipher.jar "att1 att2 2of2" "23"
+
+            temperature["metadata"]["encrypt_cpabe"]["value"]: java -jar cpabe_cipher.jar "att1 att2 2of2" "Float"
+            ```
+
         - After cypher process. 
         
-            1. temperature["type"]: "cyphertext".
-            2. temperature["value"]: java -jar cpabe_cipher.jar "att1 att2 2of2" "23"
-            3. temperature["metadata"]["encrypt_cpabe"]["value"]: java -jar cpabe_cipher.jar "att1 att2 2of2" "Float"
-
-
-            ```
+            ```sh
             "temperature": {
                 "type": "cyphertext",
                 "value": "eyJ2YTAvZ3NWMHV2SktLUi9UeFk4Mk13PT0iOiJBQUFBZ0NxK2MycjhMUjMzM1d4SEZwdWVlWGQ5dDdURUdZUXJLUVJuWUFvR2dDQ2NyU09oeXlDdzN0M2kydXo1QlhFcmFWK0Q2T3V0NHFqVVdRcnhabC9pRy94U1VjMldQN3lCSm0weHdPNzk4Y3VjTkJhUGZxeWd1bXlreFJRN254ZWRpaGxPUGphTE85cXZKVzJRRGhYMTdXVXZqT2IxZ0VRRjJ3WGNNMDdlZnhBY0FBQUFnSW80b3hhNEs1WVdGOVk4emQ5Wkg1ZmVUY25JR1l0QmphKysvUnZZVG96ZmFSVHFlQlBMbDdvZVlneGJtd3VpWjVabEZ6WXlkWEdkWkRtb0xjdDIvT1NkSFhiK0hoZzVJMW1pc1Z5UkdaRVlIc3FtcXhLVVlBVmg3aUlvS3lhcXBKYVB3MVR4QWdXMkYwdHBxbWYwSEx5L0dzU3hrU1VuQWFvVmhzRUY2ckRHQUFBQUFnQUFBQUlBQUFBQkFBQUFBQUFBQUFSaGRIUXhBQUFBZ0tZc280aHkxcDhsRlArNGNXUEVrTFRRUERVblhHZVR4OTB5VkhtSmZtQTRoWlJaWlJwZXIzNzYyOUU4Zy8zVkFLZTI3TmxkOTAzdGIyOGp3cXg5SCtDaDJibmNEQTh2T3JEYnlzaEJVcEVJVHZvZGIxa1pFSjdJOE5rUWxUZ1c3c1BIRjhPVTUvVjVyTDRrMXdVQSttSVhHbXhQUFpQQW5KMnVDckpXSFB0eEFBQUFnRGhRVGQ4ZlA0SnJCdldvS1dBc1BXUWZsUVNPZlNYQmZWS2RrR1dNeVlONkFnby9BK1VPT1dIb29lSnFuZDVtMC94bDNGYTdtSGVqWEw1SnlRM0hXbWxzQVV4dlZyczBrT1ZwR2NDSGd3WGF4ODNVOU9qaVFjdTVoamJmVjRGak84Yy9nWlV4U0xKNTBOUzF1U2dzeFZFaXhTcFYxWkRhZkNNZXBwY3lWelVGQUFBQUFRQUFBQUFBQUFBRVlYUjBNZ0FBQUlCOTlJQ1Z5eWFrSldTaW9TN0VHMHpNUTZ0QzlUYll1c0FjMlIxT0VGQktyeUtHZWNicUNyRnRUKzhENXpEeE0zV3dYMlV2TE5qOTB5Zk9qZzFGakljRE1yUlllcU4xS2pQU3RBZEhpeFFHMEdNaEcyYVZwbjgvYzJpUUhqS1JuR0h4ZXFTaCtKUjZSOGVmWXhaOHhNay8rMDdpSDhRVWdkbnRwalNGTE13TURBQUFBSUFCVHUyU1NGLzI2VWxuSzRnbGE3SEZwdUFkQ0UzS0VQSmtBRCs0SjQwbWlXK2hCT2xGazdUQ2pnSDhGVHY3Vkl2WHlNMFgvRE9pc3J5cVN2UFhXZ3hGRHVNZTVVaWdCN29xQkdtcG9pdFlQZmhLQkRyeWN1SGVwYm4xZXhaRjlnb2M3cTQ2REdtOUVHUlIzcWZSYmFKcGlLK2ZEazNUekRsUEFXK21FOWpGZnc9PSJ9",
@@ -269,22 +300,73 @@ We are going to see and example of each supported API to explain this:
 
 * NGSILD.
 
-TODO
-Tomar como referencia las indicaciones para NGSIv2....
+    - Default config.cfg configuration.
+        
+        ```sh
+        ...
+        APIVersion=NGSILDv1
+        ...
+        relativePathAttributeEncriptation=[[["encrypt_cpabe/type","Property"]]]
+        noEncryptedKeys=["id","type","@context"]
+        ```
+
+    - Format to detect an attribute must be cyphered.
+
+        ```sh
+        "attrName":{
+            "type":"Property",
+            "value":"attrValue",
+            "encrypt_cpabe":{
+                "type":"Property",
+                "value":"policyValue"
+            }
+        }
+        ```
+
+    - How cypher an attribute with an example. 
+        - Before cypher process.
+
+            ```sh
+            "brandName":{
+                "type":"Property",
+                "value":"Mercedes",
+                "encrypt_cpabe":{
+                    "type":"Property",
+                    "value":"att1 att2 2of2"
+                }
+            }
+            ```
+        - Cypher operations.         
+
+            ```sh
+            brandName["value"]: java -jar cpabe_cipher.jar "att1 att2 2of2" "Mercedes"
+            2. brandName["encrypt_cpabe"]["value"]: "encrypt_cpabe"
+            ```
+
+        - After cypher process. 
+            
+            ```sh
+            "brandName":{
+                "type":"Property",
+                "value":                  "eyJTd3FRZVFnYmN1SUhjMmlwWW5ud3BBPT0iOiJBQUFBZ0tScCtFREZSdi9HeStKaE1KU0JaeldJc3BNNDdXRnl6OEFYdjdGQWdIVmdLdXNlbW9qSExJVWx6ZFpDQXVtTktrV2QxMlhYWW93Mk1PeEtNeEZLemQxcG54ZFR1QStMSzkvdS8yUGNrdG1vOFkvOUZZcSsyMUx2S3hidEo3R2ZHVkpXbE9KL2FMeWhEZmpjYWNvTG9yMHF0MU9pNjBEeWFYYWtKeWcwb3JQM0FBQUFnSjBtKzNuWVVIenhVRE1kcndYSWIwZUdrR0tyeTFOYjh1cmVBc2ZyUnY3ODFoQ0dET3B1WHpUdUdWMGNXcHhoL3o2YWIwQXBTTFNyWS9jb2U1bWdKWjRsUGljKzlNa1Fwc0VYYW1FMnk0VkZCZ1BWOFE2eXJ6QUhlR1RnSXpWSWppb0FhcGxlS3k2WTNLNG94NGtLbm5UUkRFYlVGaVhhSjI4b21MaEJqbmVTQUFBQUFnQUFBQUlBQUFBQkFBQUFBQUFBQUFSaGRIUXhBQUFBZ0lBUHY1N0tNMXhGeXB0S2VUZFM0Y1BNTlg3Nk9saEVJVjFwOVZSUk5VemhYNXhUVVRGTkpEOUFlM3FHYVNQZDA3UzAybjh2bEhKdXM3Q0Yxcm50eU9BWCsrdUU3Z3NuNk5rbm0rM3BiQVZrd01GQlVoRmVwbVBxMGJZZm9XRHkycDlGM2dzUGx2eTFWaVZ0VXM0N0FJVjg1YXNrMXRCOUpnS2hVYVhLekJON0FBQUFnR2hUd1NJVFBNV1ZHMFFXbVpGNysrdHVnNXlBZkNlaExSSFhiTzk0QzRkU0RkTS82T2lCL09IRmFqVnVQd3NoUDQ4ckdYMzNLRVhySXdDeGl3aHYrWTQzWXhadFRMZ2dBK3ZiQS9xa3RnMThpVjl2NFhWR0JKZEVlbHpLRG5yYzNKdjVhSTRZVFE5UnZ3L1p0aFZ1ekkzcnE0Vnl2VGhGbXRrbVFsUnN1VFdpQUFBQUFRQUFBQUFBQUFBRVlYUjBNZ0FBQUlCeFUrVHIwT0J0QXBUelJvYzExWlZ4eGFmNVBFRzlTN09kSmNETDlMb0REUWdtTmRyOU02MFZyTUVJeWZ4RXhLR2RsbEJDc2ROZ0Z0RUQrL283SjFIR25KNk8yQjdVMTcrcmxoZTg2bDFGMGtxem5aTEY4eGw0RGdmYUxoR0RtdmJNdmVNTnlGRUtTK0gvcEdpUWZFMzBaNlJab0xvdnBXTnBoOWUyUk9FVVBRQUFBSUNmamRmNzFmV3E1MzVtZEIwOG9wNmlNeTArWnA1YVUvWGIwRnMyanFKYUZkZFpiV3R4WHpycHlDb1U4RmxpaGxhTVFzRWJJdUt0WWlQQVUzcnNrSjBsaElzSlN3L05UODhUOERSNmhZZ3B5c21DcUFiSWhmWDZubGRPdjN5RldJTmdsL0NscVVUMGxBUzB6bVoweHZMYnhpUG9GNFF0M2laYXVabzR1dDJ2elE9PSJ9",
+                "encrypt_cpabe":{
+                    "type":"Property",
+                    "value":"encrypt_cpabe"
+                }
+            }
+            ```
+
 
 
 # PEP-Proxy and CP-ABE decipher method:
 
 Example CPABE decipher:
-```
-java -jar cpabe_decipher.jar "eyJWRTVwRkp6aktVUmp5dGZpS0U2eWZ3PT0iOiJBQUFBZ0FINjJFRUNzUVdyenNTWTNqeXViM1JRQzdwZHBpQnlMN2JEWXhEMkNnUEJYUEVZb3R5dTM5ZUxQSUlzTUxFZ1RhWFYxWFd1Qk40bFRPYndsY2lUWFhZbG1DdXh0Z2hYTFl1Vy9LdkFjTUNZR2Ywb2xGdnNjNjBlei9PZ0lFMlIxeU0vVWx2RVNVWFozMUhwOUJJWXZxNWYza3JLTjZKNnVncjdaaEFSdllwMEFBQUFnSDNKY2JWYXBxQnF1TXJqYU1admx0MHQxcUVITXgyUkdaejNMdCtQdWJnTHNaVmptQ3V4K2g2Vld4b1NwdVNJYmovZmtWMi91R1ZaUGlyalphVGdLOEFDaTdQeDBlSkx5Sy8zYmVLeUtBV3Y1ZGdNZzJhUWUxeWh4bHVLSmEwblBwTTEvVHIzZlBPSGk3SVJqeFJVTjJvN2hlQVFTQnB5UHRkMjVPWGY5TVczQUFBQUFnQUFBQUlBQUFBQkFBQUFBQUFBQUFSaGRIUXhBQUFBZ0V0MW5VTnQ1OXJodlpHTGRIZDVkMnArdmxTNldPUjhHeFNBUmgydTJMUXhzV2JraHJzZU40c2R6ZmVvOWZKMTk4SHJQWHZ3L3hPSnBBQitKWEl1UTlObEQ0eWJ5VjU5NnJleUlibXVWeFBxdzNlZ01KeUtOREdNZVNtd0ZhN09CN0RrcmVCYzIvd1MwV0JEdTdVSzFSOGlSeDM4WnZxMGJHMzgvTG1NVDJ3bUFBQUFnQ3BoT1NWQjgySHpLdTlnblB6ZmpnZmxQb293T2pJVzR4SmYwNGhlaVZLc01VSUowYzBvWkUxQk5tb3E1OWJORjJEak9Ncm50OTlXbWVvYlhyV3Q1S2Rid1ZMTmhIOStOQS9oa0JreTZZUUs0TitCeEtyVW9SRjc2NG5HQkVST1EyUWVwaXpVS3BwTTZYVmh0ZXVHUExyVVJldGNmc0QzODZWVWFqZkxVMVYrQUFBQUFRQUFBQUFBQUFBRVlYUjBNZ0FBQUlDQVROYldTM2hFK2ZtRVpDeTIwZS9RVEdPK3JTVVNTYktaSStyZ3g0cUNMOXBGMmM2RElVQlJWYjB6MkJhMUNEbE1FcENHQ0hMRkhuMnJVVFZCZEZTNWs4aUl3bGJ0NGVLdStOYnAyVXZJRnJrb00rQ3BVempZZDBZWUh1OGNWYUMwVncvQ29UZnFjcEhuWGRHU0taeGUrNG5WcmVXNHBUa3gwTTdkNWNyNE9RQUFBSUIwUitiR2Nrd3RleEpqdVliVVk5RkVGQkRIcHlRMWRlVEdPSEtLZll5c05xelBxR0xKekJGZEM4WVBrY3kxSThvNkt4VTgzczVXN1dCbmtxTStiZUJSVGtncnE1dWdqTmZxcDRFRWJFQldZZGpUS2lITlZIZFNTUXhrVWgxWllwY3UzVkhHT2YwVkVHYjR3Zm5vSVZnUGVVQUdjQnhvTktnNUNOVnlrNGJpWFE9PSJ9"
+
+```sh
+java -jar cpabe_decipher.jar "eyJ4azZSeUVIazVMZG4yL2E1ZnA0SGt3PT0iOiJBQUFBZ0gwMXR5dXpMYVZmNGJKV0llQlNpNDlTUnhsMjVOU3RtSGpEUVVxQThJdzVhSm9remxVdk5Rc080dVRZMnd0NkpRZVdiVFhLY3lTREZzU245MXV6NTZSNk9ncWF2eDNYQ0NnazRkRVNOTlhOaFJsWjFpVWJuVWRyaGQvZURHNTJ3WXhVdVBDc1hCZStvM2dGVXpKL2ZmbVY0TXVUTk5vNmNMNHF4MTBvOC91TkFBQUFnR05YV3ljanAwMktscmh4eUZ4TTRxaGs5UFJjRkppVHI1RU4yQjEreDN2TGhwTnhKZGwxWFJlbHYzcldtTTVYTXdnOUh1ZGRBWmR2RTRVWVh4T3dLS0FySzFSVzZJWndTeGc0THN3dmI5UllrZ25wUWNsWFg1UjRQRDEzZXFOblZOVHBwYjFXZ0hkNk9rcG9EMGNRL2xQajYzYTdwekF5a05lYU5FZEUyeHRhQUFBQUFnQUFBQUlBQUFBQkFBQUFBQUFBQUFSaGRIUXhBQUFBZ0JqZndsRzhMMGMvb1pXNVJJaDhVUk54TWFNNE1wMGZkc2hET3lxaGZTWjVaM1NjWTdFekdqNm9NZFFNQkdPb0hWSm1tcVRTcDNicExGM0VEK3pOa2N1WFpJSElSS2d3WGRpbElDNDVoSjNFNmE2Q3Q5SWlzV2ZRSHVhMFREVlFSYlN1ODlZSnQ5T3IybXQ0L3NmcUJjeUdLZ0dLNzVUNnJQcWpBNEpHcnBjNUFBQUFnQW5lbVVRQXJzam5lM293RjJvZE4wb1dTdW1HeFlaemVmSWtIMTRoKy9XalkybFptWVMycmhlRmhmNktORmxmTEpYMUdrTTJWS05QNElrMVlTNEZsbHRiaDgrQmhoa2MwN05qYSsxU0U1Q3VZUFQvMVRZYlp4SWc0ZmM3Q0xiY1pnYUtuQk5ZYVhHd09nY1FSZU1nclpFVnpGZkdvckdhK1MwdVYwY3hGNUZiQUFBQUFRQUFBQUFBQUFBRVlYUjBNZ0FBQUlCNUhybnJTcmRlNWlNTXhVUk55a3VsWXFBbTBVSit6eFJ2LzhYazNOSU96d2ptdHlLaElzdjlDZTJicnZYdnNBenpzbHdURHZYbitKZEJEdFdMSXpuT1NGa2ZKQ1I1WjRxZWI0UW9DQVBBdEpObEYyYy9NRk1BbDhmY0tlaTZ0Z29Fb1UzSnF4T1lkWkp0VllEMVF2UUxObW1xM1kxS1dZQkp2MVp6N1I3R3BRQUFBSUJDbVBONXl0QXZZN2t1NE5UUzVVaXJVWi9HeE5tSGVFLzNMbnpqYkRYTDhoKythN0pwYmNEZTRyM1U2dGZSZ2JNOWdIWVpKZ3htQXE4eFdpOXhlSTdtVGZROUozMW90d1dnaE1nZzFBbngySWxvVG9pcHhRWkoxVlVrbXQxOUhWek1qOUtNbG1iaDV6U0ErVGFwdmd6bWUvVjZBdEdhbFZWVERMeWVUTHJ0Q2c9PSJ9"
 ```
 
 If we decipher the previous example, only the policy value can't recovered from the original body.
-
-
-
-
 
 # Resume and other considerations and limitations in PEP-Proxy.
 
@@ -299,7 +381,7 @@ If we decipher the previous example, only the policy value can't recovered from 
 
 - To cypher all entity attributes we can do it if defining one condition that all attributes satisfy, for example, all attributes include a key named "type" or "value", before do it see also "Proxy PEP - updating relativePathAttributeEncriptation param" section: 
 
-    ```
+    ```sh
     relativePathAttributeEncriptation=[[["type",""]]]
     ```
 
@@ -309,13 +391,102 @@ If we decipher the previous example, only the policy value can't recovered from 
 
 - PEP-Proxy errors or validations return a simulated fixed response from API. At the moment some headers are missed comparing with the original API response (Connection, Content-Length), because they create errors.
 
-TODO
 
+# PEP-Proxy examples request.
 
+Once we obtain the capability token from Capability manager web service, we can send NGSI request adding the "x-auth-token" header to it.
 
+* NGSIv2 example.
 
+    ```sh
+    curl -X POST \
+    https://<pep_host>:<pep_port>/v2/entities \
+    -H 'Accept: application/json' \
+    -H 'Content-Type: application/json' \
+    -H 'Fiware-Service: room' \
+    -H 'Fiware-ServicePath: /pruebaroom' \
+    -H 'x-auth-token: {   "del": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvGZqLGhCbTcdBFlTAMZiAvbshtG4DZMC5A0DJ3SNjulniMXBWQMAJm/J3P98T2nE+k/m7n6aJJSdLO+hq1/EICB+kCRDxRbxRhvMh4g+/C2hKiDiDvXNUJTfie4otEbWJYIEW0C1gqxhnw16y63zhh+gJ7WGxQLuSRBmZBA8tmRqQH2L7tZPYZ2CzTqJsE9PZyXTPJVye8LglGOM71/BLvz6Vdjcmu9efPnCm9yXksba7zfSASnCDQf4uBYnC2KXb/LYZedGMcWw0BdEK84Ep8d1rccvzQ7nfxGviYG6M0r/cKLHb58kSxVhwpTNoPg3LCo/2fp0fFb5xvY3n7bR5wIDAQAB",   "id": "knf3jrn1bi6ftt8pf0676ehm4a",   "ii": 1568197484,   "is": "capabilitymanager@um.es",   "su": "joseluis",   "de": "*",   "si": "HdncBHHoNQszE/qK4FzO6+D3s+9KbAnqWUO3xjRzgdRhm9IhcxAfi+6hlx/qZWfufqjKf66KwWV/et5QUe3wWM9kkwk0Nfb1fdG2kyoYM3YHHQZ8k3xeEwoWsR7+MfLtns3BWncHAxtiNSzSupDdpxzijsHBPDx0XUEd+TCpa3KR17WBHSfVHwc1jYPllvcSZfwSlZXbTFmYbpR+P4CNTnfwNr9rnnIB2msK3m7QQQBq5RkutTkeLkP7f8YERyax4n1JFDrQQ9ytMcp/+nZjjrkfOOhZPA1aYkf7f88+qZiKCSNhisxS32NzVuzWtQFhaciYwo1K6R+a9fZyJpeoOQ==",   "ar": [     {       "ac": "*",       "re": "*"     }   ],   "nb": 1568197484,   "na": 1568201084 }' \
+    -d '{
+        "id": "Room2",
+        "type": "Room",
+        "temperature": {
+            "value": 23,
+            "type": "Float",
+            "metadata": {
+                "encrypt_cpabe":{
+                    "type":"policy",
+                    "value":"att1 att2 2of2"
+                }
+            }
+        },
+        "pressure": {
+            "value": 720,
+            "type": "Integer",
+            "metadata": {
+                "encrypt_cpabe2":{
+                    "type":"Text",
+                    "value":"admin"
+                }
+            }
+        },
+        "color": {
+            "value": "Red",
+            "type": "Text",
+            "metadata": {
+                "encrypt_cpabe":{
+                    "type":"Text",
+                    "value":"att4 att5 2of2"
+                }
+            }
+        }
+    }
+    '
+    ```
+    
+* NGSILDv1 example.    
 
-# TODO:
+    ```sh
+    curl -X POST \
+        https://<pep_host>:<pep_port>/ngsi-ld/v1/entities \
+        -H 'Accept: application/ld+json' \
+        -H 'Content-Type: application/ld+json' \
+        -H 'x-auth-token: {   "del": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAvGZqLGhCbTcdBFlTAMZiAvbshtG4DZMC5A0DJ3SNjulniMXBWQMAJm/J3P98T2nE+k/m7n6aJJSdLO+hq1/EICB+kCRDxRbxRhvMh4g+/C2hKiDiDvXNUJTfie4otEbWJYIEW0C1gqxhnw16y63zhh+gJ7WGxQLuSRBmZBA8tmRqQH2L7tZPYZ2CzTqJsE9PZyXTPJVye8LglGOM71/BLvz6Vdjcmu9efPnCm9yXksba7zfSASnCDQf4uBYnC2KXb/LYZedGMcWw0BdEK84Ep8d1rccvzQ7nfxGviYG6M0r/cKLHb58kSxVhwpTNoPg3LCo/2fp0fFb5xvY3n7bR5wIDAQAB",   "id": "knf3jrn1bi6ftt8pf0676ehm4a",   "ii": 1568197484,   "is": "capabilitymanager@um.es",   "su": "joseluis",   "de": "*",   "si": "HdncBHHoNQszE/qK4FzO6+D3s+9KbAnqWUO3xjRzgdRhm9IhcxAfi+6hlx/qZWfufqjKf66KwWV/et5QUe3wWM9kkwk0Nfb1fdG2kyoYM3YHHQZ8k3xeEwoWsR7+MfLtns3BWncHAxtiNSzSupDdpxzijsHBPDx0XUEd+TCpa3KR17WBHSfVHwc1jYPllvcSZfwSlZXbTFmYbpR+P4CNTnfwNr9rnnIB2msK3m7QQQBq5RkutTkeLkP7f8YERyax4n1JFDrQQ9ytMcp/+nZjjrkfOOhZPA1aYkf7f88+qZiKCSNhisxS32NzVuzWtQFhaciYwo1K6R+a9fZyJpeoOQ==",   "ar": [     {       "ac": "*",       "re": "*"     }   ],   "nb": 1568197484,   "na": 1568201084 }' \
+        -d '{
+        "@context":[
+                "https://uri.etsi.org/ngsi-ld/v1/ngsi-ld-core-context.jsonld",
+                {
+                    "Vehicle": "http://example.org/vehicle/Vehicle",
+                    "brandName": "http://example.org/vehicle/brandName",
+                    "speed": "http://example.org/vehicle/speed",
+                    "color": "http://example.org/vehicle/color"
+                }
+        ],
+        "id":"urn:ngsi-ld:Vehicle:99",
+        "type":"Vehicle",
+        "brandName":{
+            "type":"Property",
+            "value":"Mercedes",
+            "encrypt_cpabe":{
+            "type":"Property",
+            "value":"att1 att2 2of2"
+            }
+        },
+        "speed":{
+            "type":"Property",
+            "value":80,
+            "encrypt_cpabe2":{
+            "type":"Property",
+            "value":"admin"
+            }
+        },
+        "color":{
+            "type":"Property",
+            "value":"Red"
+        }  
+        }'
+    ```
+
+# TO DO...:
 
 - (incluir en el resumen) ¿Qué pasa si queremos sobreescribir el dato encriptado con un valor y no viene el metadato de encriptación? ¿se podria hacer? ¿como se controlaría? ¿el metadato se puede borrar del CB?
     - NGSIv1 --> Hacer prueba e indicar que pasaría aunque actualmente no esté soportado.
@@ -328,8 +499,7 @@ Tener lo mismo que he hecho para "allApiHeaders" y "allSeparatorPathAttributeEnc
 
 BUSCAR TODO y PDTE_JUAN por si hubiera algo anotado y que se hubiese pasado actualizar o contemplar....
 
-
-# DOUBTS
+# DOUBTS...:
 
 * ¿Qué pasa si queremos buscar fintrando por attributo encriptado?
 * ¿se tienen que encriptar los metadatos?

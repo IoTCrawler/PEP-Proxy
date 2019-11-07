@@ -21,10 +21,19 @@ cfg = configparser.ConfigParser()
 cfg.read(["./config.cfg"])  
 pep_host = cfg.get("GENERAL", "pep_host")
 pep_port = int(cfg.get("GENERAL", "pep_port"))
+
+APIVersion = cfg.get("GENERAL", "APIVersion")
+
+target_protocol = cfg.get("GENERAL", "target_protocol")
 target_host = cfg.get("GENERAL", "target_host")
 target_port = int(cfg.get("GENERAL", "target_port"))
 
-APIVersion = cfg.get("GENERAL", "APIVersion")
+blockchain_usevalidation=int(cfg.get("GENERAL", "blockchain_usevalidation"))
+blockchain_protocol = cfg.get("GENERAL", "blockchain_protocol")
+blockchain_host = cfg.get("GENERAL", "blockchain_host")
+blockchain_port = int(cfg.get("GENERAL", "blockchain_port"))
+
+chunk_size=int(cfg.get("GENERAL", "chunk_size"))
 
 allApiHeaders=json.loads(cfg.get("GENERAL", "allApiHeaders"))
 
@@ -33,9 +42,6 @@ for m in range(len(allApiHeaders)):
     if(allApiHeaders[m][0].upper()==APIVersion.upper()):
         apiHeaders = allApiHeaders[m][1]
         break
-
-target_protocol = cfg.get("GENERAL", "target_protocol")
-chunk_size=int(cfg.get("GENERAL", "chunk_size"))
 
 allSeparatorPathAttributeEncriptation=json.loads(cfg.get("GENERAL", "allSeparatorPathAttributeEncriptation"))
 
@@ -48,13 +54,15 @@ for m in range(len(allSeparatorPathAttributeEncriptation)):
 rPAE=json.loads(cfg.get("GENERAL", "relativePathAttributeEncriptation"))
 noEncryptedKeys = json.loads(cfg.get("GENERAL", "noEncryptedKeys"))
 
+tabLoggingString = "\t\t\t\t\t\t\t"
+
 def CBConnection(method, uri,headers,body = None):
 
     try:
 
         #logging.info("")
         #logging.info("")
-        #logging.info(" ********* CBConnection ********* ")
+        #logging.info("********* CBConnection *********")
 
         uri = UtilsPEP.obtainValidUri(APIVersion,uri)
 
@@ -96,12 +104,12 @@ def CBConnection(method, uri,headers,body = None):
                     headers.pop("x-auth-token")
 
                 logging.info("BROKER REQUEST:\n" + 
-                "\t\tHost: " + target_host + "\n" + 
-                "\t\tPort: " + str(target_port) + "\n" + 
-                "\t\tMethod: " + method + "\n" + 
-                "\t\tURI: " + uri + "\n" + 
-                "\t\tHeaders: " + str(headers) + "\n" + 
-                "\t\tBody: " + str(body))
+                tabLoggingString + "- Host: " + target_host + "\n" + 
+                tabLoggingString + "- Port: " + str(target_port) + "\n" + 
+                tabLoggingString + "- Method: " + method + "\n" + 
+                tabLoggingString + "- URI: " + uri + "\n" + 
+                tabLoggingString + "- Headers: " + str(headers) + "\n" + 
+                tabLoggingString + "- Body: " + str(body))
 
                 conn.request(method, uri, body, headers)
 
@@ -114,22 +122,62 @@ def CBConnection(method, uri,headers,body = None):
             else:
                 return -1
         
-        #logging.info(" ********* CBConnection - END ********* ")
+        #logging.info("********* CBConnection - END ********* ")
 
         return response
 
-    except:
+    except Exception as e:
+        logging.info(e)
+        return -1
 
+def BlockChainConnection(method, uri, headers = {}, body = None):
+
+    try:
+
+        #logging.info("")
+        #logging.info("")
+        #logging.info("********* BlockChainConnection *********")
+
+        # send some data
+        
+        if(blockchain_protocol.upper() == "http".upper() or blockchain_protocol.upper() == "https".upper()):
+
+            if(blockchain_protocol.upper() == "http".upper()):
+                conn = http.client.HTTPConnection(blockchain_host, blockchain_port)
+            else:                    
+                
+                gcontext = ssl.SSLContext()
+                conn = http.client.HTTPSConnection(blockchain_host,blockchain_port,
+                                                context=gcontext)
+
+            logging.info("BLOCKCHAIN REQUEST:\n" +
+                         tabLoggingString + "- Host: " + blockchain_host + "\n" + 
+                         tabLoggingString + "- Port: " + str(blockchain_port) + "\n" + 
+                         tabLoggingString + "- Method: " + method + "\n" + 
+                         tabLoggingString + "- URI: " + uri + "\n" + 
+                         tabLoggingString + "- Headers: " + str(headers) + "\n" + 
+                         tabLoggingString + "- Body: " + str(body))
+
+            conn.request(method, uri, body, headers)
+
+            response = conn.getresponse()
+
+            #logging.info("BlockChainConnection - RESPONSE")
+            logging.info(" SUCCESS : BlockChain response - code: "      + str(response.code))
+            #logging.info("Headers: ")
+            #logging.info(response.headers)
+        
+        #logging.info("********* BlockChainConnection - END *********")
+
+        return response
+
+    except Exception as e:
+        logging.info(e)
         return -1
 
 def getstatusoutput(command):
     process = Popen(command, stdout=PIPE,stderr=PIPE)
     out, err = process.communicate()
-
-    #print("out")
-    #print(out)
-    #print("err")
-    #print(err)
 
     return (process.returncode, out)
 
@@ -142,7 +190,7 @@ def obtainRequestHeaders(RequestHeaders):
     try:
         # We get the headers
         
-        #logging.info (" ********* HEADERS BEFORE obtainRequestHeaders ********* ")
+        #logging.info ("********* HEADERS BEFORE obtainRequestHeaders *********")
         #logging.info (RequestHeaders)
         
         for key in RequestHeaders:
@@ -172,14 +220,19 @@ def obtainRequestHeaders(RequestHeaders):
 
         headers["Error"] = str(e)
 
-    #logging.info (" ********* HEADERS AFTER obtainRequestHeaders ********* ")
+    #logging.info ("********* HEADERS AFTER obtainRequestHeaders *********")
     #logging.info (headers)
 
     return headers, content_length
 
 def validationToken(headers,method,uri,body = None):
 
-    validation = False
+    validationCapabilityToken = False
+    validationBlockChain = False
+    validationResult = False
+
+    isRevoked = False
+    strRevoked = ""
 
     outTypeProcessed = ""
 
@@ -212,9 +265,10 @@ def validationToken(headers,method,uri,body = None):
                 #print(str(headers[key]))
 
                 #Validating token
+                #Observation: str(uri).replace("&",";") --> for PDP error: "The reference to entity "***" must end with the ';' delimiter.""
                 codeType, outType = getstatusoutput(["java","-jar","CapabilityEvaluator.jar",
                 str(method),
-                str(uri),
+                str(uri).replace("&",";"),
                 headersStr, # "{}", #headers
                 bodyStr,
                 str(headers[key])])
@@ -228,23 +282,98 @@ def validationToken(headers,method,uri,body = None):
                 #print("outTypeProcessed: " + outTypeProcessed)
 
                 if (outTypeProcessed.upper()=="AUTHORIZED".upper()):
-                    validation = True
+
+                    validationCapabilityToken = True
+
+                    if (blockchain_usevalidation == 1):
+
+                        capabilityTokenId = json.loads(headers[key])["id"]
+
+                        #Send requests to blockchain to obtain if Capability Token id exists and its 
+                        resultGet = BlockChainConnection("GET", "/token/" + capabilityTokenId, {}, None)
+                        #resultGet = BlockChainConnection("GET", "/token/43oi76utr62o8fuad5v79duhia", {}, None)
+
+
+                        errorBlockChainConnectionGET = False
+                        try:
+                            if(resultGet==-1):
+                                errorBlockChainConnectionGET = True
+                        except:
+                            errorBlockChainConnectionGET = False
+
+                        if (errorBlockChainConnectionGET==False):
+
+                            strDataGET = resultGet.read(chunk_size).decode('utf8')
+
+                            if (resultGet.code!=200):
+                                
+                                #If Capability Token id don't exist, send requests to register it.
+                                resultPost = BlockChainConnection("POST", "/token/register", {}, "{\"id\":\"" + capabilityTokenId + "\"}")
+
+                                errorBlockChainConnectionPOST = False
+                                try:
+                                    if(resultPost==-1):
+                                        errorBlockChainConnectionPOST = True
+                                except:
+                                    errorBlockChainConnectionPOST = False
+
+                                if (errorBlockChainConnectionPOST==False):
+
+                                    strDataPOST = resultPost.read(chunk_size).decode('utf8')
+
+                                    if (resultPost.code==201):
+                                        validationBlockChain = True
+                                    else:
+                                        headers["Error"] = str("Can't confirm validity state of the registered token.(2)")
+                                        validationBlockChain = False
+                                else:
+                                    headers["Error"] = str("Can't confirm validity state of the registered token.(1)")
+                                    validationBlockChain = False
+                            else:
+                                stateValue = json.loads(strDataGET)["state"]
+
+                                if (stateValue==1):
+                                    validationBlockChain = True
+                                else:
+                                    isRevoked = True
+                                    validationBlockChain = False
+
+                        else:
+                            headers["Error"] = str("Can't confirm validity state of the registered token.(0)")
+                            validationBlockChain = False
+                    else:
+                        validationBlockChain = True
 
                 break
-
 
     except Exception as e:
         logging.info(e)
 
         headers["Error"] = str(e)
 
-    logging.info ("Capability token validation - Result: " + str(validation) + " - Code: " + str(outTypeProcessed))
+    if (validationCapabilityToken and validationBlockChain):
+        validationResult = True
 
-    return validation
+    if (isRevoked):
+        strRevoked = " - Code: REVOKED"
+    else:
+        if (blockchain_usevalidation == 0):
+            strRevoked = " - Validation no configured (always true)."
 
+    if headers.get("Error"):
+        logging.info("Error: " + str(headers["Error"]))
+
+    logging.info("CAPABILITY TOKEN'S VALIDATION:\n" +
+                tabLoggingString + "1) Request... - Result: " + str(validationCapabilityToken) + " - Code: " + str(outTypeProcessed) + "\n" +
+                tabLoggingString + "2) BlockChain - Result: " + str(validationBlockChain) + strRevoked + "\n" +
+                tabLoggingString + "SUCCESS : Capability token's validation response - " + str(validationResult).upper()
+    )
+
+    return validationResult
+    
 def obtainResponseHeaders(ResponseHeaders):
 
-    #logging.info (" ********* HEADERS BEFORE obtainResponseHeaders ********* ")
+    #logging.info ("********* HEADERS BEFORE obtainResponseHeaders *********")
     #logging.info (ResponseHeaders)
 
 
@@ -266,7 +395,7 @@ def obtainResponseHeaders(ResponseHeaders):
 
         headers["Error"] = str(e)
 
-    #logging.info (" ********* HEADERS AFTER obtainResponseHeaders ********* ")
+    #logging.info ("********* HEADERS AFTER obtainResponseHeaders *********")
     #logging.info (headers)
 
     return  headers, target_chunkedResponse
@@ -279,20 +408,23 @@ def loggingPEPRequest(req):
     #logging.info(req.path)
     #logging.info(req.protocol_version)
     #logging.info(req.raw_requestline)
-    logging.info(" ******* PEP-REQUEST : " + req.address_string() + " - " + str(req.raw_requestline) + " ******* ")  
+    logging.info("******* PEP-REQUEST : " + req.address_string() + " - " + str(req.raw_requestline) + " *******")  
 
 class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
-    def do_HandleError(self,method):
-        message = UtilsPEP.obtainErrorResponseBody(APIVersion,method)
-        code = UtilsPEP.obtainErrorResponseCode(APIVersion,method)
+    def do_HandleError(self,method,code,title,details):
+        messageBody = UtilsPEP.obtainErrorResponseBody(APIVersion,method,code,title,details)
+        #code = UtilsPEP.obtainErrorResponseCode(APIVersion,method)
+        #self.send_response(code)
+
         self.send_response(code)
 
-        errorHeaders,chunkedResponse = UtilsPEP.obtainErrorResponseHeaders(APIVersion,method,message)
+        errorHeaders,chunkedResponse = UtilsPEP.obtainErrorResponseHeaders(APIVersion)
         for key in errorHeaders:
             self.send_header(key, errorHeaders[key])
         self.end_headers() 
-        data = json.dumps(message).encode()
+        #data = json.dumps(message).encode()
+        data = json.dumps(messageBody).encode()
         if(chunkedResponse):
             self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
         else:
@@ -311,77 +443,80 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             try:
                 #To find only admittable headers from request previously configured in config.cfg file.
-                value_index = apiHeaders.index("Error")
+                value_index = headers.index("Error")
             except:
                 value_index = -1
 
             testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"GET",self.path)
 
-            if (value_index != -1 or testSupported == False ):
+            if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"GET")
+                SimpleHTTPRequestHandler.do_HandleError(self,"GET",400,"Bad Request","Error obtaining headers.")
 
             else:
 
-                validation = validationToken(headers,"GET",self.path)
-
-                if (validation == False):
+                if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"GET")
+                    SimpleHTTPRequestHandler.do_HandleError(self,"GET",501,"Not Implemented","No supported method/path.")
 
                 else:
-                
-                    # We are sending this to the CB
-                    result = CBConnection("GET", self.path, headers, None)
 
-                    errorCBConnection = False
-                    try:
-                        if(result==-1):
-                            errorCBConnection = True
-                    except:
-                        errorCBConnection = False
+                    validation = validationToken(headers,"GET",self.path)
 
-                    if(errorCBConnection):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"GET")
+                    if (validation == False):
+                        SimpleHTTPRequestHandler.do_HandleError(self,"GET",401,"Unauthorized","The token is missing or invalid.")
 
                     else:
-
-                        # We send back the response to the client
-                        self.send_response(result.code)
-
-                        headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
-
-                        #logging.info(" ******* Sending Headers back to client ******* ")
-                        for key in headersResponse:
-                            self.send_header(key, headersResponse[key])
-
-                        self.end_headers()
-
-                        #logging.info("Sending the Body back to client")
-
-                        # Link to resolve Transfer-Encoding chunked cases
-                        # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
-
-                        while True:
-                            data = result.read(chunk_size)
                     
-                            if data is None or len(data) == 0:
-                                break
+                        # We are sending this to the CB
+                        result = CBConnection("GET", self.path, headers, None)
+
+                        errorCBConnection = False
+                        try:
+                            if(result==-1):
+                                errorCBConnection = True
+                        except:
+                            errorCBConnection = False
+
+                        if(errorCBConnection):
+                            SimpleHTTPRequestHandler.do_HandleError(self,"GET",500,"Internal Server Error","GENERAL")
+                        else:
+
+                            # We send back the response to the client
+                            self.send_response(result.code)
+
+                            headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
+
+                            #logging.info(" ******* Sending Headers back to client ******* ")
+                            for key in headersResponse:
+                                self.send_header(key, headersResponse[key])
+
+                            self.end_headers()
+
+                            #logging.info("Sending the Body back to client")
+
+                            # Link to resolve Transfer-Encoding chunked cases
+                            # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
+
+                            while True:
+                                data = result.read(chunk_size)
+                        
+                                if data is None or len(data) == 0:
+                                    break
+
+                                if (target_chunkedResponse):
+                                    self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
+                                else:
+                                    self.wfile.write(data)
 
                             if (target_chunkedResponse):
-                                self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
-                            else:
-                                self.wfile.write(data)
+                                self.wfile.flush()
 
-                        if (target_chunkedResponse):
-                            self.wfile.flush()
-
-                    self.close_connection
+                        self.close_connection
 
         except Exception as e:
             logging.info(str(e))
-
-            SimpleHTTPRequestHandler.do_HandleError(self,"GET")
+            SimpleHTTPRequestHandler.do_HandleError(self,"GET",500,"Internal Server Error","GENERAL")
 
     def do_POST(self):
         target_chunkedResponse=False
@@ -394,88 +529,91 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             try:
                 #To find only admittable headers from request previously configured in config.cfg file.
-                value_index = apiHeaders.index("Error")
+                value_index = headers.index("Error")
             except:
                 value_index = -1
 
             testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"POST",self.path)
 
-            if (value_index != -1 or testSupported == False):
+            if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"POST")
-                    
+                SimpleHTTPRequestHandler.do_HandleError(self,"POST",400,"Bad Request","Error obtaining headers.")
+
             else:
 
-                #logging.info (" ********* OBTAIN BODY ********* ")
-                # We get the body
-                if (content_length>0):
-                    #logging.info ("-------- self.rfile.read(content_length) -------")
-                    post_body   = self.rfile.read(content_length)
-                else:
-                    #logging.info ("-------- Lanzo self.rfile.read() -------")
-                    post_body   = self.rfile.read()
-
-                #logging.info(post_body)
-
-                validation = validationToken(headers,"POST",self.path,post_body)
-
-                if (validation == False):
+                if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"POST")
+                    SimpleHTTPRequestHandler.do_HandleError(self,"POST",501,"Not Implemented","No supported method/path.")
 
                 else:
 
-                    # We are sending this to the CB
-                    result = CBConnection("POST", self.path,headers, post_body)
+                    #logging.info (" ********* OBTAIN BODY ********* ")
+                    # We get the body
+                    if (content_length>0):
+                        #logging.info ("-------- self.rfile.read(content_length) -------")
+                        post_body   = self.rfile.read(content_length)
+                    else:
+                        #logging.info ("-------- Lanzo self.rfile.read() -------")
+                        post_body   = self.rfile.read()
 
-                    errorCBConnection = False
-                    try:
-                        if(result==-1):
-                            errorCBConnection = True
-                    except:
-                        errorCBConnection = False
+                    #logging.info(post_body)
 
-                    if(errorCBConnection):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"POST")
+                    validation = validationToken(headers,"POST",self.path,post_body)
+
+                    if (validation == False):
+                        SimpleHTTPRequestHandler.do_HandleError(self,"POST",401,"Unauthorized","The token is missing or invalid.")
 
                     else:
 
-                        # We send back the response to the client
-                        self.send_response(result.code)
+                        # We are sending this to the CB
+                        result = CBConnection("POST", self.path,headers, post_body)
 
-                        headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
+                        errorCBConnection = False
+                        try:
+                            if(result==-1):
+                                errorCBConnection = True
+                        except:
+                            errorCBConnection = False
 
-                        #logging.info(" ******* Sending Headers back to client ******* ")
-                        for key in headersResponse:
-                            self.send_header(key, headersResponse[key])
+                        if(errorCBConnection):
+                            SimpleHTTPRequestHandler.do_HandleError(self,"POST",500,"Internal Server Error","GENERAL")
+                        else:
 
-                        self.end_headers()
+                            # We send back the response to the client
+                            self.send_response(result.code)
 
-                        #logging.info("Sending the Body back to client")
+                            headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
 
-                        # Link to resolve Transfer-Encoding chunked cases
-                        # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
+                            #logging.info(" ******* Sending Headers back to client ******* ")
+                            for key in headersResponse:
+                                self.send_header(key, headersResponse[key])
 
-                        while True:
-                            data = result.read(chunk_size)
-                    
-                            if data is None or len(data) == 0:
-                                break
+                            self.end_headers()
 
+                            #logging.info("Sending the Body back to client")
+
+                            # Link to resolve Transfer-Encoding chunked cases
+                            # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
+
+                            while True:
+                                data = result.read(chunk_size)
+                        
+                                if data is None or len(data) == 0:
+                                    break
+
+                                if (target_chunkedResponse):
+                                    self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
+                                else:
+                                    self.wfile.write(data)
+                
                             if (target_chunkedResponse):
-                                self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
-                            else:
-                                self.wfile.write(data)
-            
-                        if (target_chunkedResponse):
-                            self.wfile.flush()
+                                self.wfile.flush()
 
-                    self.close_connection
+                        self.close_connection
 
         except Exception as e:
             logging.info(str(e))
-            
-            SimpleHTTPRequestHandler.do_HandleError(self,"POST")
+            SimpleHTTPRequestHandler.do_HandleError(self,"POST",500,"Internal Server Error","GENERAL")
 
     def do_DELETE(self):
         target_chunkedResponse=False
@@ -488,75 +626,79 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             try:
                 #To find only admittable headers from request previously configured in config.cfg file.
-                value_index = apiHeaders.index("Error")
+                value_index = headers.index("Error")
             except:
                 value_index = -1
 
             testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"DELETE",self.path)
 
-            if (value_index != -1 or testSupported == False):
+            if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"DELETE")
+                SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",400,"Bad Request","Error obtaining headers.")
 
             else:
 
-                validation = validationToken(headers,"DELETE",self.path)
-
-                if (validation == False):
+                if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"DELETE")
+                    SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",501,"Not Implemented","No supported method/path.")
 
                 else:
-                
-                    # We are sending this to the CB
-                    result = CBConnection("DELETE", self.path, headers, None)
 
-                    errorCBConnection = False
-                    try:
-                        if(result==-1):
-                            errorCBConnection = True
-                    except:
-                        errorCBConnection = False
+                    validation = validationToken(headers,"DELETE",self.path)
 
-                    if(errorCBConnection):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"DELETE")
-                    else:        
-                        # We send back the response to the client
-                        self.send_response(result.code)
+                    if (validation == False):
+                        SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",401,"Unauthorized","The token is missing or invalid.")
 
-                        headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
-
-                        #logging.info(" ******* Sending Headers back to client ******* ")
-                        for key in headersResponse:
-                            self.send_header(key, headersResponse[key])
-
-                        self.end_headers()
-
-                        #logging.info("Sending the Body back to client")
-
-                        # Link to resolve Transfer-Encoding chunked cases
-                        # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
-
-                        while True:
-                            data = result.read(chunk_size)
+                    else:
                     
-                            if data is None or len(data) == 0:
-                                break
+                        # We are sending this to the CB
+                        result = CBConnection("DELETE", self.path, headers, None)
 
+                        errorCBConnection = False
+                        try:
+                            if(result==-1):
+                                errorCBConnection = True
+                        except:
+                            errorCBConnection = False
+
+                        if(errorCBConnection):
+                            SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",500,"Internal Server Error","GENERAL")
+                        else:        
+                            # We send back the response to the client
+                            self.send_response(result.code)
+
+                            headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
+
+                            #logging.info(" ******* Sending Headers back to client ******* ")
+                            for key in headersResponse:
+                                self.send_header(key, headersResponse[key])
+
+                            self.end_headers()
+
+                            #logging.info("Sending the Body back to client")
+
+                            # Link to resolve Transfer-Encoding chunked cases
+                            # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
+
+                            while True:
+                                data = result.read(chunk_size)
+                        
+                                if data is None or len(data) == 0:
+                                    break
+
+                                if (target_chunkedResponse):
+                                    self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
+                                else:
+                                    self.wfile.write(data)
+                    
                             if (target_chunkedResponse):
-                                self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
-                            else:
-                                self.wfile.write(data)
-                
-                        if (target_chunkedResponse):
-                            self.wfile.flush()
+                                self.wfile.flush()
 
-                    self.close_connection
+                        self.close_connection
 
         except Exception as e:
             logging.info(str(e))
-
-            SimpleHTTPRequestHandler.do_HandleError(self,"DELETE")
+            SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",500,"Internal Server Error","GENERAL")
 
     def do_PATCH(self):
         target_chunkedResponse=False
@@ -569,89 +711,95 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
             try:
                 #To find only admittable headers from request previously configured in config.cfg file.
-                value_index = apiHeaders.index("Error")
+                value_index = headers.index("Error")
             except:
                 value_index = -1
 
             testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"PATCH",self.path)
 
-            if (value_index != -1 or testSupported == False):
+
+            if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"PATCH")
+                SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",400,"Bad Request","Error obtaining headers.")
 
             else:
 
-                #logging.info (" ********* OBTAIN BODY ********* ")
-                # We get the body
-                if (content_length>0):
-                    #logging.info ("-------- self.rfile.read(content_length) -------")
-                    patch_body   = self.rfile.read(content_length)
-                else:
-                    #logging.info ("-------- Lanzo self.rfile.read() -------")
-                    patch_body   = self.rfile.read()
-
-                #logging.info(patch_body)
-
-                validation = validationToken(headers,"PATCH",self.path,patch_body)
-
-                if (validation == False):
+                if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"PATCH")
+                    SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",501,"Not Implemented","No supported method/path.")
 
                 else:
-                    # We are sending this to the CB
-                    result = CBConnection("PATCH", self.path,headers, patch_body)
 
-                    errorCBConnection = False
-                    try:
-                        if(result==-1):
-                            errorCBConnection = True
-                    except:
+                    #logging.info (" ********* OBTAIN BODY ********* ")
+                    # We get the body
+                    if (content_length>0):
+                        #logging.info ("-------- self.rfile.read(content_length) -------")
+                        patch_body   = self.rfile.read(content_length)
+                    else:
+                        #logging.info ("-------- Lanzo self.rfile.read() -------")
+                        patch_body   = self.rfile.read()
+
+                    #logging.info(patch_body)
+
+                    validation = validationToken(headers,"PATCH",self.path,patch_body)
+
+                    if (validation == False):
+                        SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",401,"Unauthorized","The token is missing or invalid.")
+
+                    else:
+                        # We are sending this to the CB
+                        result = CBConnection("PATCH", self.path,headers, patch_body)
+
                         errorCBConnection = False
+                        try:
+                            if(result==-1):
+                                errorCBConnection = True
+                        except:
+                            errorCBConnection = False
 
-                    if(errorCBConnection):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"PATCH")
+                        if(errorCBConnection):
+                            SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",500,"Internal Server Error","GENERAL")
+                        else:        
+                            # We send back the response to the client
+                            self.send_response(result.code)
 
-                    else:        
-                        # We send back the response to the client
-                        self.send_response(result.code)
+                            headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
 
-                        headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
+                            #logging.info(" ******* Sending Headers back to client ******* ")
+                            for key in headersResponse:
+                                self.send_header(key, headersResponse[key])
 
-                        #logging.info(" ******* Sending Headers back to client ******* ")
-                        for key in headersResponse:
-                            self.send_header(key, headersResponse[key])
+                            self.end_headers()
 
-                        self.end_headers()
+                            logging.info("Sending the Body back to client")
 
-                        logging.info("Sending the Body back to client")
+                            # Link to resolve Transfer-Encoding chunked cases
+                            # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
 
-                        # Link to resolve Transfer-Encoding chunked cases
-                        # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
+                            while True:
+                                data = result.read(chunk_size)
+                        
+                                if data is None or len(data) == 0:
+                                    break
 
-                        while True:
-                            data = result.read(chunk_size)
+                                if (target_chunkedResponse):
+                                    self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
+                                else:
+                                    self.wfile.write(data)
                     
-                            if data is None or len(data) == 0:
-                                break
-
                             if (target_chunkedResponse):
-                                self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
-                            else:
-                                self.wfile.write(data)
-                
-                        if (target_chunkedResponse):
-                            self.wfile.flush()
+                                self.wfile.flush()
 
-                    self.close_connection
+                        self.close_connection
 
         except Exception as e:
             logging.info(str(e))
-            SimpleHTTPRequestHandler.do_HandleError(self,"PATCH")
+            SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",500,"Internal Server Error","GENERAL")            
+            
 
     #Actually not suppported
     def do_PUT(self):
-        SimpleHTTPRequestHandler.do_HandleError(self,"PUT")
+        SimpleHTTPRequestHandler.do_HandleError(self,"PUT",501,"Not Implemented","No supported method.")
 
 logPath="./"
 fileName="out"

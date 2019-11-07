@@ -240,7 +240,7 @@ def cipherBodyAttributes(body,encryptAttributes):
     except:
         return bodyBackUp, False
 
-def errorHeaders(method,message):
+def errorHeaders(method=None,message=None):
 
     headers = dict()
 
@@ -270,12 +270,13 @@ def errorHeaders(method,message):
     return  headers, True
 
 
-def errorBody(method):
-    # Current time in UTC
-    now_utc = datetime.now(timezone('UTC'))
-    date_time = now_utc.strftime("%Y-%m-%dT%H:%M:%S.") + now_utc.strftime("%f")[:-3] + now_utc.strftime("%z")
-    return {'timestamp':str(date_time),'status': 500,'error':'Internal Server Error','message':'GENERAL'}
+def errorBody(method,code,title,details):
+#    # Current time in UTC
+#    now_utc = datetime.now(timezone('UTC'))
+#    date_time = now_utc.strftime("%Y-%m-%dT%H:%M:%S.") + now_utc.strftime("%f")[:-3] + now_utc.strftime("%z")
+#    return {'timestamp':str(date_time),'status': 500,'error':'Internal Server Error','message':'GENERAL'}
+    return {"code": code, "error": title, "details": details}
 
-def errorCode(method):
-
-    return 500
+#def errorCode(method):
+#
+#    return 500

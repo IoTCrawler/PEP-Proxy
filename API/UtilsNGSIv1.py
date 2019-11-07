@@ -108,7 +108,7 @@ def cipherBodyAttributes(body,encryptAttributes):
         return bodyBackUp, False
 
 
-def errorHeaders(method,message):
+def errorHeaders(method=None,message=None):
 
     headers = dict()
 
@@ -133,10 +133,11 @@ def errorHeaders(method,message):
     #Second value is false because API no send Transfer-Encoding=chunked header response.
     return  headers, False
 
-def errorBody(method):
+def errorBody(method,code,title,details):
 
-    return {"orionError":{"code":"400","reasonPhrase":"Bad Request","details":"service not found"}}
+    #return {"orionError":{"code":"400","reasonPhrase":"Bad Request","details":"service not found"}}
+    return {"code": code, "error": title, "details": details}
 
-def errorCode(method):
-
-    return 400    
+#def errorCode(method):
+#
+#    return 400    

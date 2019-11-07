@@ -266,7 +266,7 @@ def cipherBodyAttributes(body,encryptAttributes):
 
 
 
-def errorHeaders(method,message):
+def errorHeaders(method=None,message=None):
 
     headers = dict()
 
@@ -291,10 +291,11 @@ def errorHeaders(method,message):
     return  headers, False
 
 
-def errorBody(method):
+def errorBody(method,code,title,details):
 
-    return {'error':'BadRequest','description':'service not found'}
+    #return {'error':'BadRequest','description':'service not found'}
+    return {"code": code, "error": title, "details": details}
 
-def errorCode(method):
-
-    return 400
+#def errorCode(method):
+#
+#    return 400

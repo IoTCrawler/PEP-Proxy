@@ -267,6 +267,7 @@ def validationToken(headers,method,uri,body = None):
                 #Validating token
                 #Observation: str(uri).replace("&",";") --> for PDP error: "The reference to entity "***" must end with the ';' delimiter.""
                 codeType, outType = getstatusoutput(["java","-jar","CapabilityEvaluator.jar",
+                #str(pep_host) + ":" + str(pep_port),
                 str(method),
                 str(uri).replace("&",";"),
                 headersStr, # "{}", #headers
@@ -447,29 +448,29 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             except:
                 value_index = -1
 
-            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"GET",self.path)
+            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,self.command,self.path)
 
             if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"GET",400,"Bad Request","Error obtaining headers.")
+                SimpleHTTPRequestHandler.do_HandleError(self,self.command,400,"Bad Request","Error obtaining headers.")
 
             else:
 
                 if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"GET",501,"Not Implemented","No supported method/path.")
+                    SimpleHTTPRequestHandler.do_HandleError(self,self.command,501,"Not Implemented","No supported method/path.")
 
                 else:
 
-                    validation = validationToken(headers,"GET",self.path)
+                    validation = validationToken(headers,self.command,self.path)
 
                     if (validation == False):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"GET",401,"Unauthorized","The token is missing or invalid.")
+                        SimpleHTTPRequestHandler.do_HandleError(self,self.command,401,"Unauthorized","The token is missing or invalid.")
 
                     else:
                     
                         # We are sending this to the CB
-                        result = CBConnection("GET", self.path, headers, None)
+                        result = CBConnection(self.command, self.path, headers, None)
 
                         errorCBConnection = False
                         try:
@@ -479,7 +480,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                             errorCBConnection = False
 
                         if(errorCBConnection):
-                            SimpleHTTPRequestHandler.do_HandleError(self,"GET",500,"Internal Server Error","GENERAL")
+                            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
                         else:
 
                             # We send back the response to the client
@@ -516,7 +517,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             logging.info(str(e))
-            SimpleHTTPRequestHandler.do_HandleError(self,"GET",500,"Internal Server Error","GENERAL")
+            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
 
     def do_POST(self):
         target_chunkedResponse=False
@@ -533,17 +534,17 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             except:
                 value_index = -1
 
-            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"POST",self.path)
+            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,self.command,self.path)
 
             if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"POST",400,"Bad Request","Error obtaining headers.")
+                SimpleHTTPRequestHandler.do_HandleError(self,self.command,400,"Bad Request","Error obtaining headers.")
 
             else:
 
                 if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"POST",501,"Not Implemented","No supported method/path.")
+                    SimpleHTTPRequestHandler.do_HandleError(self,self.command,501,"Not Implemented","No supported method/path.")
 
                 else:
 
@@ -558,15 +559,15 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
                     #logging.info(post_body)
 
-                    validation = validationToken(headers,"POST",self.path,post_body)
+                    validation = validationToken(headers,self.command,self.path,post_body)
 
                     if (validation == False):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"POST",401,"Unauthorized","The token is missing or invalid.")
+                        SimpleHTTPRequestHandler.do_HandleError(self,self.command,401,"Unauthorized","The token is missing or invalid.")
 
                     else:
 
                         # We are sending this to the CB
-                        result = CBConnection("POST", self.path,headers, post_body)
+                        result = CBConnection(self.command, self.path,headers, post_body)
 
                         errorCBConnection = False
                         try:
@@ -576,7 +577,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                             errorCBConnection = False
 
                         if(errorCBConnection):
-                            SimpleHTTPRequestHandler.do_HandleError(self,"POST",500,"Internal Server Error","GENERAL")
+                            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
                         else:
 
                             # We send back the response to the client
@@ -613,7 +614,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             logging.info(str(e))
-            SimpleHTTPRequestHandler.do_HandleError(self,"POST",500,"Internal Server Error","GENERAL")
+            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
 
     def do_DELETE(self):
         target_chunkedResponse=False
@@ -630,29 +631,29 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             except:
                 value_index = -1
 
-            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"DELETE",self.path)
+            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,self.command,self.path)
 
             if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",400,"Bad Request","Error obtaining headers.")
+                SimpleHTTPRequestHandler.do_HandleError(self,self.command,400,"Bad Request","Error obtaining headers.")
 
             else:
 
                 if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",501,"Not Implemented","No supported method/path.")
+                    SimpleHTTPRequestHandler.do_HandleError(self,self.command,501,"Not Implemented","No supported method/path.")
 
                 else:
 
-                    validation = validationToken(headers,"DELETE",self.path)
+                    validation = validationToken(headers,self.command,self.path)
 
                     if (validation == False):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",401,"Unauthorized","The token is missing or invalid.")
+                        SimpleHTTPRequestHandler.do_HandleError(self,self.command,401,"Unauthorized","The token is missing or invalid.")
 
                     else:
                     
                         # We are sending this to the CB
-                        result = CBConnection("DELETE", self.path, headers, None)
+                        result = CBConnection(self.command, self.path, headers, None)
 
                         errorCBConnection = False
                         try:
@@ -662,7 +663,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                             errorCBConnection = False
 
                         if(errorCBConnection):
-                            SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",500,"Internal Server Error","GENERAL")
+                            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
                         else:        
                             # We send back the response to the client
                             self.send_response(result.code)
@@ -698,7 +699,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             logging.info(str(e))
-            SimpleHTTPRequestHandler.do_HandleError(self,"DELETE",500,"Internal Server Error","GENERAL")
+            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
 
     def do_PATCH(self):
         target_chunkedResponse=False
@@ -715,18 +716,18 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
             except:
                 value_index = -1
 
-            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,"PATCH",self.path)
+            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,self.command,self.path)
 
 
             if (value_index != -1):
                 logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",400,"Bad Request","Error obtaining headers.")
+                SimpleHTTPRequestHandler.do_HandleError(self,self.command,400,"Bad Request","Error obtaining headers.")
 
             else:
 
                 if (testSupported == False):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",501,"Not Implemented","No supported method/path.")
+                    SimpleHTTPRequestHandler.do_HandleError(self,self.command,501,"Not Implemented","No supported method/path.")
 
                 else:
 
@@ -741,14 +742,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
                     #logging.info(patch_body)
 
-                    validation = validationToken(headers,"PATCH",self.path,patch_body)
+                    validation = validationToken(headers,self.command,self.path,patch_body)
 
                     if (validation == False):
-                        SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",401,"Unauthorized","The token is missing or invalid.")
+                        SimpleHTTPRequestHandler.do_HandleError(self,self.command,401,"Unauthorized","The token is missing or invalid.")
 
                     else:
                         # We are sending this to the CB
-                        result = CBConnection("PATCH", self.path,headers, patch_body)
+                        result = CBConnection(self.command, self.path,headers, patch_body)
 
                         errorCBConnection = False
                         try:
@@ -758,7 +759,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
                             errorCBConnection = False
 
                         if(errorCBConnection):
-                            SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",500,"Internal Server Error","GENERAL")
+                            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
                         else:        
                             # We send back the response to the client
                             self.send_response(result.code)
@@ -794,12 +795,12 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         except Exception as e:
             logging.info(str(e))
-            SimpleHTTPRequestHandler.do_HandleError(self,"PATCH",500,"Internal Server Error","GENERAL")            
+            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")            
             
 
     #Actually not suppported
     def do_PUT(self):
-        SimpleHTTPRequestHandler.do_HandleError(self,"PUT",501,"Not Implemented","No supported method.")
+        SimpleHTTPRequestHandler.do_HandleError(self,self.command,501,"Not Implemented","No supported method.")
 
 logPath="./"
 fileName="out"

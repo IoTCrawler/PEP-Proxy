@@ -11,3 +11,7 @@ services:
     ports:
         - "1027:1027"
     restart: unless-stopped
+    environment:
+        # PEP proxy endpoint: protocol+ip+port
+        # HOST NO admitted: 0.0.0.0, localhost, 127.0.0.1
+        - PEP_ENDPOINT=https://155.54.95.170:1027

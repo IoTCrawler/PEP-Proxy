@@ -8,6 +8,7 @@ import configparser
 import UtilsPEP
 from subprocess import Popen, PIPE
 import html
+import os
 
 #import numpy as np
 
@@ -55,6 +56,8 @@ rPAE=json.loads(cfg.get("GENERAL", "relativePathAttributeEncriptation"))
 noEncryptedKeys = json.loads(cfg.get("GENERAL", "noEncryptedKeys"))
 
 tabLoggingString = "\t\t\t\t\t\t\t"
+
+pep_device = str(os.getenv('PEP_ENDPOINT'))
 
 def CBConnection(method, uri,headers,body = None):
 
@@ -264,18 +267,35 @@ def validationToken(headers,method,uri,body = None):
                 #print(bodyStr)
                 #print(str(headers[key]))
 
-                #Validating token
+                
+                ##Validating token (v1)
+                ##Observation: str(uri).replace("&",";") --> for PDP error: "The reference to entity "***" must end with the ';' delimiter.""
+                #codeType, outType = getstatusoutput(["java","-jar","CapabilityEvaluator_old.jar",
+                ##str(pep_device),
+                #str(method),
+                #str(uri).replace("&",";"),
+                #headersStr, # "{}", #headers
+                #bodyStr,
+                #str(headers[key])])
+                #
+                #logging.info("codeType_v0: " + str(codeType))
+                #logging.info("outType_v0: " + str(outType))
+                
+                #Validating token (v2)
                 #Observation: str(uri).replace("&",";") --> for PDP error: "The reference to entity "***" must end with the ';' delimiter.""
                 codeType, outType = getstatusoutput(["java","-jar","CapabilityEvaluator.jar",
-                #str(pep_host) + ":" + str(pep_port),
+                str(pep_device),
                 str(method),
                 str(uri).replace("&",";"),
+                str(headers[key]), #Capability token
+                "", #Subject
                 headersStr, # "{}", #headers
-                bodyStr,
-                str(headers[key])])
+                bodyStr
+                ])
 
-                #print("codeType: " + str(codeType))
-                #print("outType: " + str(outType))
+                #logging.info("codeType_v2: " + str(codeType))
+                #logging.info("outType_v2: " + str(outType))
+
 
                 outTypeProcessed = outType.decode('utf8').replace("'", '"').replace("CODE: ","").replace("\n", "")
                 #outTypeProcessed = outType.decode('utf8').replace("'", '"').replace("CODE: ","")

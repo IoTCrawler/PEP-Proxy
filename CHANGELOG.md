@@ -4,3 +4,7 @@ Added logs with data info of response at test files when it occurred a FAILURE: 
 # 2019-11-07
 Add changes to consider blockchain capability token validation (using POST /token/register & GET /token/<id>). Revoked tokens is supported.
 Changes to categorize the type of error generated in the PEP-Proxy component.
+# 2019-11-14
+Using self.command.
+# 2019-11-18
+Changes about action, resource and device's validation of capability token.

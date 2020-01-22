@@ -3,3 +3,5 @@ venv/
 out.log
 API/__pycache__/
 *.pyc
+CapabilityEvaluator_old.jar
+test/Client_NGSILD/testFecha.py

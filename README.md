@@ -116,7 +116,7 @@ Launch then next components:
 - Capability manager web service running. 
 
 ```sh
-git clone http://odinslab.duckdns.org/security_components/Py_CapabilityManagerWebService.git)
+git clone http://odinslab.duckdns.org/security_components/Py_CapabilityManagerWebService.git
 ```
 
 - Broker target to access.
@@ -132,7 +132,7 @@ cd projectPath / PEP-Proxy
 
 The build.sh file contains docker build -t iotcrawler/pep-proxy ./ command.
 
-Finally, to launch the connector image, we use the next command:
+Finally, AFTER REVIEW docker-compose.yml file and especially its environment variables, to launch the connector image we use the next command:
 
 ```sh
 cd projectPath / PEP-Proxy

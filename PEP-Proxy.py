@@ -10,6 +10,8 @@ from subprocess import Popen, PIPE
 import html
 import os
 
+import time
+
 #import numpy as np
 
 
@@ -59,6 +61,8 @@ tabLoggingString = "\t\t\t\t\t\t\t"
 
 pep_device = str(os.getenv('PEP_ENDPOINT'))
 
+logginKPI = cfg.get("GENERAL", "logginKPI")
+
 def CBConnection(method, uri,headers,body = None):
 
     try:
@@ -72,7 +76,7 @@ def CBConnection(method, uri,headers,body = None):
         #logging.info("CBConnection: Sending the Rquest")
 
         # send some data
-        
+   
         if(target_protocol.upper() == "http".upper() or target_protocol.upper() == "https".upper()):
 
             state = True
@@ -80,17 +84,29 @@ def CBConnection(method, uri,headers,body = None):
             if (body != None and str(uri).upper().startswith("/v1/subscribeContext".upper()) == False 
                 and str(uri).upper().startswith("/v2/subscriptions".upper()) == False 
                 and str(uri).upper().startswith("/ngsi-ld/v1/subscriptions".upper()) == False):
-                
+            
                 state = False
 
                 #logging.info("Original body request: ")
                 #logging.info(str(body))
-                
+               
+                milli_secEP=0
+                milli_secEP2=0
+
+                milli_secEP=int(round(time.time() * 1000))
+
                 body, state = UtilsPEP.encryptProcess(APIVersion,method,uri,body,sPAE,rPAE,noEncryptedKeys)
                 #body = html.escape(body)
                 
                 #logging.info("Body request AFTER encryption process: ")
                 #logging.info(str(body))
+
+                milli_secEP2=int(round(time.time() * 1000))
+
+                if(logginKPI.upper()=="Y".upper()):
+                    logging.info("")
+                    logging.info("")
+                    logging.info("Total(ms) Encrypt process: " + str(milli_secEP2 - milli_secEP))
 
             if (state):
 
@@ -100,6 +116,7 @@ def CBConnection(method, uri,headers,body = None):
                     gcontext = ssl.SSLContext()
                     conn = http.client.HTTPSConnection(target_host,target_port,
                                                 context=gcontext)
+
 
                 #Deleting "x-auth-token" header, before NGSILD, REQUEST.
 
@@ -115,7 +132,6 @@ def CBConnection(method, uri,headers,body = None):
                 tabLoggingString + "- Body: " + str(body))
 
                 conn.request(method, uri, body, headers)
-
                 response = conn.getresponse()
 
                 #logging.info("CBConnection - RESPONSE")
@@ -241,7 +257,18 @@ def validationToken(headers,method,uri,body = None):
 
     #print("uri: " + uri)
 
+    milli_secValCT=0
+    milli_secValCT2=0
+
+    milli_secBC=0
+    milli_secBC2=0
+
+    milli_secValCTT=0
+    milli_secValCTT2=0
+
     try:
+
+        milli_secValCTT=int(round(time.time() * 1000))
 
         for key in headers:
 
@@ -280,7 +307,9 @@ def validationToken(headers,method,uri,body = None):
                 #
                 #logging.info("codeType_v0: " + str(codeType))
                 #logging.info("outType_v0: " + str(outType))
-                
+        
+                milli_secValCT=int(round(time.time() * 1000))
+
                 #Validating token (v2)
                 #Observation: str(uri).replace("&",";") --> for PDP error: "The reference to entity "***" must end with the ';' delimiter.""
                 codeType, outType = getstatusoutput(["java","-jar","CapabilityEvaluator.jar",
@@ -292,6 +321,8 @@ def validationToken(headers,method,uri,body = None):
                 headersStr, # "{}", #headers
                 bodyStr
                 ])
+
+                milli_secValCT2=int(round(time.time() * 1000))
 
                 #logging.info("codeType_v2: " + str(codeType))
                 #logging.info("outType_v2: " + str(outType))
@@ -307,6 +338,8 @@ def validationToken(headers,method,uri,body = None):
                     validationCapabilityToken = True
 
                     if (blockchain_usevalidation == 1):
+
+                        milli_secBC=int(round(time.time() * 1000))
 
                         capabilityTokenId = json.loads(headers[key])["id"]
 
@@ -362,6 +395,9 @@ def validationToken(headers,method,uri,body = None):
                         else:
                             headers["Error"] = str("Can't confirm validity state of the registered token.(0)")
                             validationBlockChain = False
+
+                        milli_secBC2=int(round(time.time() * 1000))
+
                     else:
                         validationBlockChain = True
 
@@ -389,6 +425,15 @@ def validationToken(headers,method,uri,body = None):
                 tabLoggingString + "2) BlockChain - Result: " + str(validationBlockChain) + strRevoked + "\n" +
                 tabLoggingString + "SUCCESS : Capability token's validation response - " + str(validationResult).upper()
     )
+
+    milli_secValCTT2=int(round(time.time() * 1000))
+
+    if(logginKPI.upper()=="Y".upper()):
+        logging.info("")
+        logging.info("")
+        logging.info("Total(ms) Validacion CT: " + str(milli_secValCT2 - milli_secValCT))
+        logging.info("Total(ms) BlockChain: " + str(milli_secBC2 - milli_secBC))
+        logging.info("Total(ms) Validacion process: " + str(milli_secValCTT2 - milli_secValCTT))
 
     return validationResult
     

@@ -105,6 +105,10 @@ vi config.cfg
 
     - noEncryptedKeys: It is a list of first-level attribute keys that never will be cyphered. **IMPORTANT:** It's necessary to use lower case. Default ["id","type","@context"].
 
+- Params to log KPIs info
+
+    - logginKPI=Admitted values: "Y","N"
+    
 # Prerequisites
 
 To run this project is neccessary to install the docker-compose tool.

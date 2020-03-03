@@ -501,88 +501,93 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
     def do_GET(self):
 
         target_chunkedResponse=False
-
-        try:
-            loggingPEPRequest(self)
-
-            headers,content_length = obtainRequestHeaders(self.headers)
-
+        if (self.path=="" or self.path=="/"):
+            self.send_response(200)
+            self.end_headers()
+            self.close_connection
+        else:
             try:
-                #To find only admittable headers from request previously configured in config.cfg file.
-                value_index = headers.index("Error")
-            except:
-                value_index = -1
+                loggingPEPRequest(self)
 
-            testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,self.command,self.path)
+                headers,content_length = obtainRequestHeaders(self.headers)
 
-            if (value_index != -1):
-                logging.info("Error: " + str(headers["Error"]))
-                SimpleHTTPRequestHandler.do_HandleError(self,self.command,400,"Bad Request","Error obtaining headers.")
+                try:
+                    #To find only admittable headers from request previously configured in config.cfg file.
+                    value_index = headers.index("Error")
+                except:
+                    value_index = -1
 
-            else:
+                testSupported = UtilsPEP.validateNotSupportedMethodPath(APIVersion,self.command,self.path)
 
-                if (testSupported == False):
+                if (value_index != -1):
                     logging.info("Error: " + str(headers["Error"]))
-                    SimpleHTTPRequestHandler.do_HandleError(self,self.command,501,"Not Implemented","No supported method/path.")
+                    SimpleHTTPRequestHandler.do_HandleError(self,self.command,400,"Bad Request","Error obtaining headers.")
 
                 else:
 
-                    validation = validationToken(headers,self.command,self.path)
-
-                    if (validation == False):
-                        SimpleHTTPRequestHandler.do_HandleError(self,self.command,401,"Unauthorized","The token is missing or invalid.")
+                    if (testSupported == False):
+                        logging.info("Error: " + str(headers["Error"]))
+                        SimpleHTTPRequestHandler.do_HandleError(self,self.command,501,"Not Implemented","No supported method/path.")
 
                     else:
-                    
-                        # We are sending this to the CB
-                        result = CBConnection(self.command, self.path, headers, None)
 
-                        errorCBConnection = False
-                        try:
-                            if(result==-1):
-                                errorCBConnection = True
-                        except:
-                            errorCBConnection = False
+                        validation = validationToken(headers,self.command,self.path)
 
-                        if(errorCBConnection):
-                            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
+                        if (validation == False):
+                            SimpleHTTPRequestHandler.do_HandleError(self,self.command,401,"Unauthorized","The token is missing or invalid.")
+
                         else:
-
-                            # We send back the response to the client
-                            self.send_response(result.code)
-
-                            headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
-
-                            #logging.info(" ******* Sending Headers back to client ******* ")
-                            for key in headersResponse:
-                                self.send_header(key, headersResponse[key])
-
-                            self.end_headers()
-
-                            #logging.info("Sending the Body back to client")
-
-                            # Link to resolve Transfer-Encoding chunked cases
-                            # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
-
-                            while True:
-                                data = result.read(chunk_size)
                         
-                                if data is None or len(data) == 0:
-                                    break
+                            # We are sending this to the CB
+                            result = CBConnection(self.command, self.path, headers, None)
+
+                            errorCBConnection = False
+                            try:
+                                if(result==-1):
+                                    errorCBConnection = True
+                            except:
+                                errorCBConnection = False
+
+                            if(errorCBConnection):
+                                SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
+                            else:
+
+                                # We send back the response to the client
+                                self.send_response(result.code)
+
+                                headersResponse, target_chunkedResponse = obtainResponseHeaders(result.headers)
+
+                                #logging.info(" ******* Sending Headers back to client ******* ")
+                                for key in headersResponse:
+                                    self.send_header(key, headersResponse[key])
+
+                                self.end_headers()
+
+                                #logging.info("Sending the Body back to client")
+
+                                # Link to resolve Transfer-Encoding chunked cases
+                                # https://docs.amazonaws.cn/en_us/polly/latest/dg/example-Python-server-code.html
+
+                                while True:
+                                    data = result.read(chunk_size)
+                            
+                                    if data is None or len(data) == 0:
+                                        break
+
+                                    if (target_chunkedResponse):
+                                        self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
+                                    else:
+                                        self.wfile.write(data)
 
                                 if (target_chunkedResponse):
-                                    self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
-                                else:
-                                    self.wfile.write(data)
+                                    self.wfile.flush()
 
-                            if (target_chunkedResponse):
-                                self.wfile.flush()
+                            self.close_connection
 
-                        self.close_connection
-
-        except Exception as e:
-            logging.info(str(e))
-            SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
+            except Exception as e:
+                logging.info(str(e))
+                SimpleHTTPRequestHandler.do_HandleError(self,self.command,500,"Internal Server Error","GENERAL")
+        
 
     def do_POST(self):
         target_chunkedResponse=False

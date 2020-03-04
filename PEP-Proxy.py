@@ -27,14 +27,23 @@ pep_port = int(cfg.get("GENERAL", "pep_port"))
 
 APIVersion = cfg.get("GENERAL", "APIVersion")
 
-target_protocol = cfg.get("GENERAL", "target_protocol")
-target_host = cfg.get("GENERAL", "target_host")
-target_port = int(cfg.get("GENERAL", "target_port"))
+#target_protocol = cfg.get("GENERAL", "target_protocol")
+#target_host = cfg.get("GENERAL", "target_host")
+#target_port = int(cfg.get("GENERAL", "target_port"))
 
-blockchain_usevalidation=int(cfg.get("GENERAL", "blockchain_usevalidation"))
-blockchain_protocol = cfg.get("GENERAL", "blockchain_protocol")
-blockchain_host = cfg.get("GENERAL", "blockchain_host")
-blockchain_port = int(cfg.get("GENERAL", "blockchain_port"))
+#blockchain_usevalidation=int(cfg.get("GENERAL", "blockchain_usevalidation"))
+#blockchain_protocol = cfg.get("GENERAL", "blockchain_protocol")
+#blockchain_host = cfg.get("GENERAL", "blockchain_host")
+#blockchain_port = int(cfg.get("GENERAL", "blockchain_port"))
+
+target_protocol = str(os.getenv('target_protocol'))
+target_host = str(os.getenv('target_host'))
+target_port = int(os.getenv('target_port'))
+
+blockchain_usevalidation = int(os.getenv('blockchain_usevalidation'))
+blockchain_protocol = str(os.getenv('blockchain_protocol'))
+blockchain_host = str(os.getenv('blockchain_host'))
+blockchain_port = int(os.getenv('blockchain_port'))
 
 chunk_size=int(cfg.get("GENERAL", "chunk_size"))
 
@@ -502,6 +511,7 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
         target_chunkedResponse=False
         if (self.path=="" or self.path=="/"):
+            #To CI/CD.
             self.send_response(200)
             self.end_headers()
             self.close_connection

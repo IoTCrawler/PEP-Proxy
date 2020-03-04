@@ -35,6 +35,23 @@ COPY PEP-Proxy.py UtilsPEP.py config.cfg cpabe_cipher.jar CapabilityEvaluator.ja
 COPY config /opt/PEP-Proxy/config
 COPY local_dependencies /opt/PEP-Proxy/local_dependencies
 
+#Broker protocol. Admitted values: "http","https"
+ENV target_protocol=http
+#Broker host.
+ENV target_host=broker
+ENV target_port=9090
+
+#Validate Capability token using blockchain: Admitted values: "0: No use; 1:Use"
+ENV blockchain_usevalidation=1
+
+#BlockChain protocol. Admitted values: "http","https"
+ENV blockchain_protocol=http
+#BlockChain host.
+ENV blockchain_host=blockchain
+ENV blockchain_port=8000
+
+ENV PEP_ENDPOINT=https://pephost:1027
+
 # application's default port
 EXPOSE 1027
 

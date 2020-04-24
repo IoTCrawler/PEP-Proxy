@@ -1,3 +1,7 @@
+# License
+
+Indexing Project source code files are made avaialable under the Apache License, Version 2.0 (Apache-2.0), located into the LICENSE file.
+
 # Introduction
 
 This project is a PEP-Proxy which is designed to supports different APIs. When PEP-Proxy receives a request, this component validates and handles the request before send it to the corresponding target (as to a Context Broker API).

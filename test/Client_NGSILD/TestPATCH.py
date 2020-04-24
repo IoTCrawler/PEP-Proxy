@@ -1,3 +1,9 @@
+#
+#Copyright Odin Solutions S.L. All Rights Reserved.
+#
+#SPDX-License-Identifier: Apache-2.0
+#
+
 import http.client
 
 import configparser
@@ -43,7 +49,7 @@ if __name__ == '__main__':
     pep_port = cfg.get("GENERAL", "pep_port")
 
     headers = {"Content-Type":"application/json"}
-    body = json.dumps({"name":"pedrog@um.es","password":"iotcrawler"}).encode()
+    body = json.dumps({"name":"user@test.es","password":"passw"}).encode()
 
     keyRockMethod="POST"
     keyRockUri="/v1/auth/tokens"

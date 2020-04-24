@@ -1,3 +1,9 @@
+#
+#Copyright Odin Solutions S.L. All Rights Reserved.
+#
+#SPDX-License-Identifier: Apache-2.0
+#
+
 import json
 import API.UtilsNGSIv1,API.UtilsNGSIv2,API.UtilsNGSILDv1
 import sys

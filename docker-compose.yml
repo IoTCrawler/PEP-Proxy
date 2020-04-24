@@ -1,3 +1,9 @@
+#
+#Copyright Odin Solutions S.L. All Rights Reserved.
+#
+#SPDX-License-Identifier: Apache-2.0
+#
+
 version: '3.1'
 
 services:
@@ -9,14 +15,14 @@ services:
         max-size: "10m"
         max-file: "3"
     ports:
-        - "1027:1027"
+        - "1028:1027"
     restart: unless-stopped
     environment:
         #Broker protocol. Admitted values: "http","https"
-        - target_protocol=https
+        - target_protocol=http
         #Broker host.
-        - target_host=155.54.95.248
-        - target_port=9090
+        - target_host=<specify Broker Public IP address>
+        - target_port=3001
 
         #Validate Capability token using blockchain: Admitted values: "0: No use; 1:Use"
         - blockchain_usevalidation=1
@@ -24,9 +30,9 @@ services:
         #BlockChain protocol. Admitted values: "http","https"
         - blockchain_protocol=http
         #BlockChain host.
-        - blockchain_host=195.37.154.24
+        - blockchain_host=<specify BlockChain Public IP address>
         - blockchain_port=8000
 
         # PEP proxy endpoint: protocol+ip+port
         # HOST NO admitted: 0.0.0.0, localhost, 127.0.0.1
-        - PEP_ENDPOINT=https://155.54.95.170:1027
+        - PEP_ENDPOINT=<specify PEP-Proxy Public address ex: https://<PEP-IP>:<PEP-PORT>>

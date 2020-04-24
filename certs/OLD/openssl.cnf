@@ -1,6 +1,0 @@
-[req]
-req_extensions = v3_req
-
-[ v3_req ]
-subjectAltName=IP:155.54.99.111
-# or subjectAltName=DNS:www.example.com

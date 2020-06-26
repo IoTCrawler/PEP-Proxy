@@ -493,30 +493,3 @@ Once we obtain the capability token from Capability manager web service, we can 
         }  
         }'
     ```
-
-# TO DO...:
-
-- (incluir en el resumen) ¿Qué pasa si queremos sobreescribir el dato encriptado con un valor y no viene el metadato de encriptación? ¿se podria hacer? ¿como se controlaría? ¿el metadato se puede borrar del CB?
-    - NGSIv1 --> Hacer prueba e indicar que pasaría aunque actualmente no esté soportado.
-    - NGSIv2 --> Hacer prueba e indicar que pasaría.
-    - NGSILDv1 --> Hacer prueba e indicar que pasaría.
-
-PDTE_JUAN: incluir algo al respecto de la validación.
-
-Tener lo mismo que he hecho para "allApiHeaders" y "allSeparatorPathAttributeEncriptation", pero en este caso para los parámetros "relativePathAttributeEncriptation" y "noEncryptedKeys" -Revisar la aparición de los paŕamtros en todos lados para actualizar tambíen las anotaciones...
-
-BUSCAR TODO y PDTE_JUAN por si hubiera algo anotado y que se hubiese pasado actualizar o contemplar....
-
-# DOUBTS...:
-
-* ¿Qué pasa si queremos buscar fintrando por attributo encriptado?
-* ¿se tienen que encriptar los metadatos?
-
-
-
-
-
-
-
-
-

@@ -12,7 +12,7 @@ from subprocess import Popen, PIPE
 
 def processUri(uri):
     try:
-        if (str(uri).upper().startswith("/ngsi-ld/v1".upper()) == False ):
+        if (str(uri).upper().startswith("/ngsi-ld/v1".upper()) == False and str(uri).upper() != "/scorpio/v1/info/".upper()):
             uri = "/ngsi-ld/v1"+uri
 
         return uri

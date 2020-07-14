@@ -1,0 +1,4 @@
+apiVersion: v1
+description: Pep proxy Helm Chart
+name: pep-proxy
+version: 0.0.1

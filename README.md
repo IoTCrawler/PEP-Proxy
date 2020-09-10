@@ -54,9 +54,6 @@ vi config.cfg
 - Params to the target's endpoint.
 
     - APIVersion: Broker API sopported. Admitted values: "NGSIv1","NGSIv2","NGSILDv1"
-    - target_protocol: Broker protocol. Admitted values: "http","https"
-    - target_host: Broker host.
-    - target_port: Broker port.
     - allApiHeaders: Define the admitted headers to send to target API. If a header of the request receives by PEP-Proxy is not included in this param, the final API request will not consider it. This param store all the headers of each API supported by PEP-Proxy. It's necessary to define an element for each API supported. **IMPORTANT:** It's necessary to use lower case.
     - chunk_size: To read the response received after the API request. Default 1024
 
@@ -109,7 +106,34 @@ vi config.cfg
 - Params to log KPIs info
 
     - logginKPI=Admitted values: "Y","N"
-    
+
+# Configuration docker-compose.yml file
+
+Before launching the PEP-Proxy, it's necessary to review the docker-compose.yml file:
+
+```sh
+cd projectPath / PEP-Proxy
+vi docker-compose.yml
+```
+
+- Params to the target's endpoint.
+
+    - target_protocol: Broker protocol. Admitted values: "http","https"
+    - target_host: Broker public IP.
+    - target_port: Broker port.
+
+- Params to the blockchain's endpoint.
+
+    - blockchain_usevalidation=Validate Capability token using blockchain: Admitted values: "0: No use; 1:Use"
+    - blockchain_protocol=BlockChain protocol. Admitted values: "http","https"
+    - blockchain_host=Blockchain public IP.
+    - blockchain_port=Blockchain port.
+
+- Params to the PEP's endpoint in PDP component.
+
+    - PEP_ENDPOINT=PEP-Proxy Public address ex: https://<PEP-IP>:<PEP-PORT>>. HOST NO admitted: 0.0.0.0, localhost, 127.0.0.1
+
+
 # Prerequisites
 
 To run this project is neccessary to install the docker-compose tool.

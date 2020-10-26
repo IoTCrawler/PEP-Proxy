@@ -2,7 +2,7 @@
 apiVersion: {{ default "extensions/v1beta1" .Values.deploymentApiVersion }}
 kind: Deployment
 metadata:
-  name: {{ template "trackableappname" . }}
+  name: {{ template "name" . }}
   annotations:
     {{ if .Values.gitlab.app }}app.gitlab.com/app: {{ .Values.gitlab.app | quote }}{{ end }}
     {{ if .Values.gitlab.env }}app.gitlab.com/env: {{ .Values.gitlab.env | quote }}{{ end }}
@@ -60,6 +60,31 @@ spec:
             name: {{ .Values.application.secretName }}
         {{- end }}
         env:
+        - name: blockchain_usevalidation
+          valueFrom:
+            secretKeyRef:
+              name: {{.Release.Name}}-secret
+              key: blockchain_usevalidation
+        - name: target_protocol
+          valueFrom:
+            secretKeyRef:
+              name: {{.Release.Name}}-secret
+              key: target_protocol
+        - name: target_host
+          valueFrom:
+            secretKeyRef:
+              name: {{.Release.Name}}-secret
+              key: target_host
+        - name: target_port
+          valueFrom:
+            secretKeyRef:
+              name: {{.Release.Name}}-secret
+              key: target_port
+        - name: PEP_ENDPOINT
+          valueFrom:
+            secretKeyRef:
+              name: {{.Release.Name}}-secret
+              key: PEP_ENDPOINT
         volumeMounts:
         ports:
         - name: "{{ .Values.pepproxy.service.name }}"

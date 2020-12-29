@@ -586,14 +586,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
                                 while True:
                                     data = result.read(chunk_size)
-                            
-                                    if data is None or len(data) == 0:
-                                        break
 
                                     if (target_chunkedResponse):
                                         self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
                                     else:
                                         self.wfile.write(data)
+                            
+                                    if data is None or len(data) == 0:
+                                        break
 
                                 if (target_chunkedResponse):
                                     self.wfile.flush()
@@ -684,14 +684,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
                             while True:
                                 data = result.read(chunk_size)
-                        
-                                if data is None or len(data) == 0:
-                                    break
 
                                 if (target_chunkedResponse):
                                     self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
                                 else:
                                     self.wfile.write(data)
+                        
+                                if data is None or len(data) == 0:
+                                    break
                 
                             if (target_chunkedResponse):
                                 self.wfile.flush()
@@ -769,14 +769,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
                             while True:
                                 data = result.read(chunk_size)
-                        
-                                if data is None or len(data) == 0:
-                                    break
 
                                 if (target_chunkedResponse):
                                     self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
                                 else:
                                     self.wfile.write(data)
+                        
+                                if data is None or len(data) == 0:
+                                    break
                     
                             if (target_chunkedResponse):
                                 self.wfile.flush()
@@ -865,14 +865,14 @@ class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
 
                             while True:
                                 data = result.read(chunk_size)
-                        
-                                if data is None or len(data) == 0:
-                                    break
 
                                 if (target_chunkedResponse):
                                     self.wfile.write(b"%X\r\n%s\r\n" % (len(data), data))
                                 else:
                                     self.wfile.write(data)
+                        
+                                if data is None or len(data) == 0:
+                                    break
                     
                             if (target_chunkedResponse):
                                 self.wfile.flush()
